@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/perambluate/Blind-Randomness-from-Nonlocal-Game.git
+	branch = main
+	commit = bbe19797ff76d7aac86bdf9993bb27e6d0e47d39
+	parent = 688d3169e60c4f55c679496e080b5903727912cd
+	method = merge
+	cmdver = 0.4.6

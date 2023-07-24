@@ -1,0 +1,8 @@
+chaospy==3.3.8
+cvxpy==1.2.1
+joblib==1.2.0
+matplotlib==3.6.1
+ncpol2sdpa==1.12.3
+numpy==1.23.4
+scs==3.2.0
+sympy==1.11.1

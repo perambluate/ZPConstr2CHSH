@@ -1,0 +1,8 @@
+data/
+figure/
+*.csv
+*.png
+test*
+old_files/
+log*
+\.*
