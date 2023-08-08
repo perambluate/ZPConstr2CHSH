@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 ### Data paths
-TOP_DIR = '/home/chunyo/Documents/python/local_randomness'
+TOP_DIR = './'
 DATA_DIR = os.path.join(TOP_DIR, 'data/mtf')
 CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
                    '2b': '01', '2b_swap': '11', '2c': '10',
