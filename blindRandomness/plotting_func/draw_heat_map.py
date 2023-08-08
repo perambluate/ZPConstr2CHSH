@@ -15,6 +15,11 @@ import numpy as np
 import math
 import os, sys
 
+### Add current directory to Python path
+# (Note: this works when running the command in the dir. 'blindRandomness')
+sys.path.append('.')
+from blindRandomness.common_func.plotting_helper import *
+
 ### Choose 'beta' or 'nup' to decide which parameter to scan;
 ###   use 'both' to produce two subplots for both params
 SCAN = 'beta'
@@ -50,25 +55,10 @@ else:
 ### Default font size
 titlesize = 32
 ticksize = 30
+legendsize = 28
 
 ### Set matplotlib plotting params
-mplParams = {
-    #### Default font (family and size)
-    "font.family": "serif",
-    "font.sans-serif": "Latin Modern Roman",
-    "font.size": ticksize,
-    "figure.titlesize": titlesize,
-    "axes.labelsize": titlesize,
-    "xtick.labelsize": ticksize,
-    "ytick.labelsize": ticksize,
-    #### Xtick-axis padding
-    "xtick.major.pad": 15,
-    #### Use Latex
-    "text.usetex": True,
-    #### Make text and math font bold
-    # "font.weight": "bold",
-    # "text.latex.preamble": r"\boldmath"
-}
+mplParams = plot_settings(title = titlesize, tick = ticksize, legend = legendsize)
 
 plt.rcParams.update(mplParams)
 
@@ -77,6 +67,10 @@ CHSH_W_Q = (2 + math.sqrt(2) )/4    # CHSH win prob
 EPSILON = 1e-12                     # Smoothness of smooth min entropy (related to secrecy)
 WIN_TOL = 1e-4                      # Tolerant error for win prob
 GAMMA = 1e-2                        # Testing ratio
+
+EPS = f'eps_{EPSILON:.0e}'
+WTOL = f'wtol_{WIN_TOL:.0e}'
+GAM = f'gam_{GAMMA:.0e}'
 
 ### Num of rounds
 N_RANGE = (1e7, 1e14)
@@ -91,57 +85,6 @@ NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 
 # CLASSES = ['2a','2b','2b_swap','2c','3a','3b']
 CLASSES = ['3b']
-
-### Finite extractable rate for blind randomness extraction with testing
-def key_rate_testing(n, beta, nu_prime, gamma, asym_rate, lambda_, c_lambda,
-                        epsilon = EPSILON, win_tol = WIN_TOL, zero_tol = 0,
-                        zero_class = 'CHSH', max_p_win = CHSH_W_Q):
-    
-    ln2 = math.log(2)
-    gamma_0 = (1-gamma)/gamma
-    nu_0 = 1/(2*gamma) - gamma_0*nu_prime
-    
-    D = c_lambda**2 + (lambda_/(2*gamma))**2 - gamma_0/gamma * lambda_**2 * (1-nu_prime)*nu_prime
-    if nu_0 > max_p_win:
-        var_f = D - (lambda_*(max_p_win - nu_prime))**2
-    elif nu_0 < (1 - max_p_win):
-        var_f = D - (lambda_*(1 - max_p_win - nu_prime))**2
-    else:
-        var_f = D
-
-    max2min_f = lambda_*(gamma_0 * (1-nu_prime) + max_p_win)
-    if math.sqrt(1 - epsilon**2) == 1:
-        epsi_term = math.log2(1/2*epsilon**2)
-    else:
-        epsi_term = math.log2(1 - math.sqrt(1 - epsilon**2) )
-    
-    epsi_win = math.e ** (-2 * win_tol**2 * n)
-    zero_tol = zero_tol/2
-    epsi_zero = math.e ** (-2 * zero_tol**2 * n)
-    try:
-        log_prob = math.log2(1 - epsi_win)
-        if zero_class != 'CHSH':
-            log_prob += math.log2(1 - epsi_zero)
-    except ValueError:
-        log_prob = math.log2(sys.float_info.min)
-
-    with np.errstate(over='raise'):
-        try:
-            lamb_term = 2 ** (2 + max2min_f)
-            K_beta = 1/(6*ln2) * (beta**2)/((1-beta)**3) \
-                      * (lamb_term ** beta) \
-                      * (math.log(lamb_term + math.e**2)) **3
-
-        except FloatingPointError:
-            K_beta = 1/(6*ln2) * (beta**2)/((1-beta)**3) \
-                      * (2 ** (beta * (2 + max2min_f) ) ) \
-                      * ( (2 + max2min_f)/math.log2(math.e) ) **3
-
-    key_rate =  asym_rate \
-                - ln2/2 * beta * (math.log2(9) + math.sqrt(2 + var_f)) ** 2 \
-                + 1/(beta * n) * ( (1+beta)*epsi_term + (1+2*beta)*log_prob) \
-                - K_beta    
-    return key_rate if key_rate > 0 else 0
 
 ### Make meshgrid for 3D plot/2D colormap
 if SCAN == 'beta':
@@ -159,13 +102,13 @@ for class_ in CLASSES:
     for zero_tol in ZERO_TOLs:
         ### Specify the file record the data
         HEAD = 'lr_bff21'
-        CLASS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
-        INPUT = f'xy_{input_}'
+        CLS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
+        INP = f'xy_{input_}'
         QUAD = 'M_12'
         if class_ =='CHSH':
-            DATA_FILE = f'{HEAD}-{CLASS}-{INPUT}-{QUAD}-wtol_1e-04.csv'
+            DATA_FILE = f'{HEAD}-{CLS}-{INP}-{QUAD}-wtol_1e-04.csv'
         else:
-            DATA_FILE = f'{HEAD}-{CLASS}-{INPUT}-{QUAD}-wtol_1e-04-ztol_{zero_tol:.0e}.csv'
+            DATA_FILE = f'{HEAD}-{CLS}-{INP}-{QUAD}-wtol_1e-04-ztol_{zero_tol:.0e}.csv'
         DATA_PATH = os.path.join(DATA_DIR, DATA_FILE)
 
         ### Get the maximum winnin probability
@@ -189,7 +132,7 @@ for class_ in CLASSES:
                 c_lambda -= sum(lambda_zeros)*zero_tol
 
             ### Construct key rate function with fixed param (only leave n, beta tunable)
-            kr_func = partial(key_rate_testing, gamma = GAMMA, asym_rate = asym_rate,
+            kr_func = partial(fin_rate_testing, gamma = GAMMA, asym_rate = asym_rate,
                                 lambda_ = lambda_, c_lambda = c_lambda,
                                 zero_tol = zero_tol, zero_class = class_, max_p_win = max_p_win)
             
@@ -286,21 +229,19 @@ for class_ in CLASSES:
             if SAVE:
                 OUT_DIR = os.path.join(TOP_DIR, 'figures/corrected_FER/h_map')
                 if SCAN == 'beta':
-                    COMMON = 'bscan'
+                    COM = 'bscan'
                 elif SCAN == 'nup':
-                    COMMON = 'nupscan'
+                    COM = 'nupscan'
                 elif SCAN == 'both':
-                    COMMON = 'bothscan'
-                WIN_EXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
-                EPS = f'eps_{EPSILON:.0e}'
-                W_TOL = f'wtol_{WIN_TOL:.0e}'
-                GAM = f'gam_{GAMMA:.0e}'
-                Z_TOL = f'ztol_{zero_tol:.0e}'
-                TAIL= '2'
-                OUT_NAME = f'{COMMON}-{CLASS}-{WIN_EXP}-{INPUT}-{EPS}-{W_TOL}-{Z_TOL}-{GAM}-{QUAD}-{TAIL}'
+                    COM = 'bothscan'
+                WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
+                ZTOL = f'ztol_{zero_tol:.0e}'
+                TAIL= 'test'
+                OUT_NAME = f'{COM}-{CLS}-{WEXP}-{INP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}'
+                if TAIL:
+                    OUT_NAME += f'-{TAIL}'
                 FORMAT = 'png'
-                OUT_FILE = f'{OUT_NAME}.{FORMAT}'
-                OUT_PATH = os.path.join(OUT_DIR, OUT_FILE)
+                OUT_PATH = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
 
                 plt.savefig(OUT_PATH, format = FORMAT, bbox_inches='tight')
             

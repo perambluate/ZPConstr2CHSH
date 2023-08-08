@@ -4,10 +4,17 @@
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import numpy as np
-import os
+import os, sys
 
-### Show without save if not true; otherwise save the fig directly.
+### Add current directory to Python path
+# (Note: this works when running the command in the dir. 'blindRandomness')
+sys.path.append('.')
+from blindRandomness.common_func.plotting_helper import *
+
+### To save file or not
 SAVE = True
+### To show figure or not
+SHOW = False
 ### Set true to normalize winning probability in the superclassical-quantum range for all classes
 X_NORMALIZED = False
 ### NPA hierachy level
@@ -23,7 +30,7 @@ DATA_DIR = './data/bff21_zero'
 OUT_DIR = './figures'
 
 ### Class: 1, 2a, 2b, 2b_swap, 2c, 3a, 3b
-CLASSES = ['1','2a']
+CLASSES = ['2a']
 ### Tolerance error for zero-probability constraints
 #ERRORS = ['1e-05', '1e-04', '1e-03', '1e-02', '1e-01']
 
@@ -43,28 +50,9 @@ legendsize = 28
 linewidth = 3
 
 ### Set matplotlib plotting params
-mplParams = {
-    #### Default font (family and size)
-    "font.family": "serif",
-    "font.sans-serif": "Latin Modern Roman",
-    "font.size": legendsize,
-    "figure.titlesize": titlesize,
-    "axes.labelsize": titlesize,
-    "xtick.labelsize": ticksize,
-    "ytick.labelsize": ticksize,
-    "legend.fontsize": legendsize,
-    #### Line width
-    "lines.linewidth": linewidth,
-    #### Use Latex
-    "text.usetex": True,
-    #### Make text and math font bold
-    # "font.weight": "bold",
-    # "text.latex.preamble": r"\boldmath"
-    #### Line colors
-    "axes.prop_cycle": mpl.cycler(
-                        color = ['blue','forestgreen','firebrick','gray','darkcyan', 'olive'])
-}
-    
+mplParams = plot_settings(title = titlesize, tick = ticksize, legend = legendsize, linewidth = linewidth)
+mplParams["axes.prop_cycle"] = \
+                mpl.cycler(color = ['blue','forestgreen','firebrick','gray','darkcyan', 'olive'])
 plt.rcParams.update(mplParams)
 
 ### COMMON FILE NAME
@@ -97,8 +85,6 @@ for class_ in CLASSES:
 
         plt.plot(*data, label = label, linestyle=line, marker=marker)
 
-    #plt.locator_params(axis='y', nbins=5)
-    #plt.locator_params(axis='x', nbins=3)
     #lgd = plt.legend(ncol=2, bbox_to_anchor=(0.9, 1.2))
     plt.legend(loc='best')
 
@@ -108,21 +94,17 @@ for class_ in CLASSES:
     plt.xlabel(X_TITLE, labelpad = 0)
     plt.ylabel(r"$\displaystyle H(A|BXYE')$")
 
-    TAIL = '2'
-    FORMAT = 'png'
-    OUT_FILE = f'{COM}-{CLS}-{INP}-{WTOL}-{ZTOL}-{QUAD}-{TAIL}.{FORMAT}'
-    OUT_PATH = os.path.join(OUT_DIR, OUT_FILE)
     #SAVE_ARGS = {"bbox_extra_artists": (lgd,), "bbox_inches": 'tight'}
     SAVE_ARGS = {}
 
     if SAVE:
-        if os.path.exists(OUT_PATH):
-            ans = input("File exists, do u want to replace it? [Y/y]")
-            if ans == 'y' or ans == 'Y':
-                plt.savefig(OUT_PATH, **SAVE_ARGS)
-            else:
-                print(f'Current file name is "{OUT_FILE}"')
-                print('Change the file name to save.')
-        else:
-            plt.savefig(OUT_PATH, **SAVE_ARGS)
-    plt.show()
+        TAIL = 'test'
+        FORMAT = 'png'
+        OUT_NAME = f'{COM}-{CLS}-{INP}-{WTOL}-{ZTOL}-{QUAD}'
+        if TAIL:
+            OUT_NAME += f'-{TAIL}'
+        OUT_PATH = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
+        
+        plt.savefig(OUT_PATH, **SAVE_ARGS)
+    if SHOW:
+        plt.show()

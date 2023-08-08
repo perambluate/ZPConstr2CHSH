@@ -17,14 +17,20 @@
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import numpy as np
-import itertools
-import os
+import os, sys
 import re
+
+### Add current directory to Python path
+# (Note: this works when running the command in the dir. 'blindRandomness')
+sys.path.append('.')
+from blindRandomness.common_func.plotting_helper import *
 
 ### Choose 'opt_avg', or 'max_in', or 'min_in', or 'avg_in'
 OPT = 'max_in'
-### Show without save if not true; otherwise save the fig directly.
+### To save file or not
 SAVE = True
+### To show figure or not
+SHOW = False
 ### Set true to normalize winning probability in the superclassical-quantum range for all classes
 X_NORMALIZED = False
 ### Sort rate of randomness for non-ordered data
@@ -49,11 +55,12 @@ OUT_DIR = './figures'
 SCENARIO = ['BFF21']
 ### Class: 1, 2a, 2b, 2b_swap, 2c, 3a, 3b (standard CHSH is added automatically)
 if ALL_CLS:
-    CLASSES = ['1','2a','2b','2b_swap','2c','3a','3b']
+    CLASSES = ['CHSH','1','2a','2b','2b_swap','2c','3a','3b']
     #CLASSES = ['1','2a','2b','2c','3a','3b']
 else:
     # CLASSES = ['1','2c','3b']
-    CLASSES = ['1','3b']
+    CLASSES = ['CHSH','1','3b']
+
 ### Tolerance error for zero-probability constraints
 #ERRORS = ['1e-05', '1e-04', '1e-03', '1e-02', '1e-01']
 
@@ -81,32 +88,15 @@ else:
     linewidth = 3
 
 ### Set matplotlib plotting params
-mplParams = {
-    #### Default font (family and size)
-    "font.family": "serif",
-    "font.sans-serif": "Latin Modern Roman",
-    "font.size": legendsize,
-    "figure.titlesize": titlesize,
-    "axes.labelsize": titlesize,
-    "xtick.labelsize": ticksize,
-    "ytick.labelsize": ticksize,
-    "legend.fontsize": legendsize,
-    #### Line width
-    "lines.linewidth": linewidth,
-    #### Use Latex
-    "text.usetex": True,
-    #### Make text and math font bold
-    # "font.weight": "bold",
-    # "text.latex.preamble": r"\boldmath"
-}
+mplParams = plot_settings(title = titlesize, tick = ticksize, legend = legendsize, linewidth = linewidth)
 
 #### Line colors
 if ALL_CLS:
-    mplParams.update({"axes.prop_cycle":
-                      mpl.cycler(color = ['b','green','red','c','m', 'olive', 'purple', 'gray'])})
+    mplParams["axes.prop_cycle"] = \
+        mpl.cycler(color = ['b','green','red','c','m', 'olive', 'purple', 'gray'])
 else:
-    mplParams.update({"axes.prop_cycle":
-                      mpl.cycler(color = ['blue','forestgreen','firebrick','gray'])})
+    mplParams["axes.prop_cycle"] = \
+                      mpl.cycler(color = ['blue','forestgreen','firebrick','gray'])
 
 plt.rcParams.update(mplParams)
 
@@ -127,34 +117,31 @@ for scenario in SCENARIO:
         DATA_DIR = os.path.join(PYTHON_TOP,'data',scenario)
 
     DATA_COMMON = 'local_randomness'
-    if OPT == 'opt_avg':
-        DATA = {'CHSH': f'{DATA_COMMON}-CHSH-avg_in-{scenario}.csv'}
-        DATA.update({f'class {class_}':
-                     f'{DATA_COMMON}-class_{class_}-avg_in-{scenario}.csv' \
-                     for class_ in CLASSES})
-
-    else:    
-        DATA = {'CHSH': [f'{DATA_COMMON}-CHSH-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
-                        for x in range(2) for y in range(2)]}
-        DATA.update({f'class {class_}':
-                     [f'{DATA_COMMON}-class_{class_}-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
-                     for x in range(2) for y in range(2)] \
-                     for class_ in CLASSES})
-        
-    ### Average/max over different inputs
-    for data_name, file_list in DATA.items():
+    
+    for cls in CLASSES:
         data_list = []
+        class_name = f'class {cls}' if cls != 'CHSH' else 'CHSH'
         
         if OPT == 'opt_avg':
-            file_ = file_list
+            if cls == 'CHSH':
+                file_ = f'{DATA_COMMON}-CHSH-avg_in-{scenario}.csv'
+            else:
+                file_ = f'{DATA_COMMON}-class_{cls}-avg_in-{scenario}.csv'
             data = np.genfromtxt(os.path.join(DATA_DIR, file_), delimiter=',').T
             if SORT:
                 data = sort_data(data)
             if TAKE_LOG:
                 data = [data[0], -np.log2(data[1])]
-            label = f'{data_name}'
+            label = f'{class_name}'
             
         else:
+            file_list = []
+            if cls == 'CHSH':
+                file_list += [f'{DATA_COMMON}-CHSH-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
+                            for x in range(2) for y in range(2)]
+            else:
+                file_list += [f'{DATA_COMMON}-class_{cls}-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
+                                for x in range(2) for y in range(2)]
             for file_ in file_list:
                 data = np.genfromtxt(os.path.join(DATA_DIR, file_), delimiter=',').T
                 if SORT:
@@ -162,46 +149,48 @@ for scenario in SCENARIO:
                 if TAKE_LOG:
                     data = [data[0], -np.log2(data[1])]
                 data_list.append(data)
-            
+
             ### Average
             if OPT == 'avg_in':
                 data = np.average(data_list, axis=0)
-                label = f'{data_name}'
+                label = f'{class_name}'
             
             ### Maximize
             elif OPT == 'max_in':
                 max_input = np.argmax(np.array(data_list)[:,1][:,0])
                 data = data_list[max_input]
-                #label = f'{data_name} '+r' $\displaystyle x^{*}y^{*}$'+\
-                label = r'${}\ \displaystyle x^* y^*$'.format(data_name)+\
-                        f'={max_input:0>2b}' # ({scenario})'
+                class_name = f'class\ {cls}' if cls != 'CHSH' else 'CHSH'
+                # class_name = class_name.replace("swap", "{swap}")
+                class_name = class_name.replace("_swap", "\\textsubscript{swap}")
+                label = r'{} $\displaystyle x^*y^*={:0>2b}$'.format(class_name, max_input)
 
             ### Minimize
             elif OPT == 'min_in':
                 min_input = np.argmin(np.array(data_list)[:,1][:,0])
                 data = data_list[min_input]
-                label = f'{data_name} xy={min_input:0>2b}' # ({scenario})'
+                label = f'{class_name} xy={min_input:0>2b}' # ({scenario})'
 
-        # line = '-' if 'swap' not in data_name else '--'
         color='gray'
-        if '1' in data_name:
+        if '1' in cls:
             color = 'blue'
-        elif '2' in data_name:
+        elif '2' in cls:
             color = 'forestgreen'
-        elif '3' in data_name:
+        elif '3' in cls:
             color = 'firebrick'
         line = 'solid'
         if ALL_CLS:
-            if re.match("class [2-3]b", data_name):
+            if re.match("[2-3]b", cls):
                 line = 'dashed'
-                if 'swap' in data_name:
+                if 'swap' in cls:
                     line = 'dotted'
-            elif re.match("class [2-3]c", data_name):
+            elif re.match("[2-3]c", cls):
                 line = 'dashdot'
 
         marker = ''
+        if cls == '2b':
+            marker = '+'
         
-        plt.plot(*data, label = label, color=color, linestyle=line, marker=marker)
+        plt.plot(*data, label = label, color=color, linestyle=line, marker=marker, markersize=12)
 
     if SMALL:
         plt.locator_params(axis='y', nbins=5)
@@ -220,30 +209,24 @@ for scenario in SCENARIO:
         plt.xlabel(X_TITLE, labelpad = 0)
         plt.ylabel(r"$\displaystyle H(A|BXYE')$")
 
-    if ALL_CLS:
-        COMMON = 'all_cls'
-    else:
-        COMMON = f'{len(CLASSES)}_cls'
-    TAIL = 'gm'
-    FORMAT = 'png'
-    if TAIL:
-        OUT_FILE = f'{COMMON}-{OPT}-{scenario}-{TAIL}.{FORMAT}'
-    else:
-        OUT_FILE = f'{COMMON}-{OPT}-{scenario}.{FORMAT}'
-    OUT_PATH = os.path.join(OUT_DIR, OUT_FILE)
     if not SMALL:
         SAVE_ARGS = {"bbox_extra_artists": (lgd,), "bbox_inches": 'tight'}
     else:
         SAVE_ARGS = {"transparent": True}
-    
-    if not SAVE:
-        plt.show()
-    elif os.path.exists(OUT_PATH):
-        ans = input("File exists, do u want to replace it?[Y/y]")
-        if ans == 'y' or ans == 'Y':
-            plt.savefig(OUT_PATH, **SAVE_ARGS)
+
+    if SAVE:
+        COM = 'br-asymp'
+        if ALL_CLS:
+            COM += '-all_cls'
         else:
-            print(f'Current file name is "{OUT_FILE}"')
-            print('Change the file name to save.')
-    else:
+            COM += f'-{len(CLASSES)}cls'
+        TAIL = 'test'
+        FORMAT = 'png'
+        OUT_NAME = f'{COM}-{OPT}-{scenario}'
+        if TAIL:
+            OUT_NAME += f'-{TAIL}'
+        OUT_PATH = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
         plt.savefig(OUT_PATH, **SAVE_ARGS)
+    
+    if SHOW:
+        plt.show()        
