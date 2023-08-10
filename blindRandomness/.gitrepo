@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/perambluate/Blind-Randomness-from-Nonlocal-Game.git
 	branch = main
-	commit = dce71f628b76a1d66e78cb94d5ce55e5f83f8511
-	parent = 91a919d639b2cf7ee20c0c91db00e20ad0c4ca1e
+	commit = bfc54767cc72f8a57f2058dc222e1160cd35198b
+	parent = 9b43ea55e7d195ea2f75bb4156aa83675847dc4a
 	method = merge
 	cmdver = 0.4.6
