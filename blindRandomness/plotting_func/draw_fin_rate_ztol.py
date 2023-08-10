@@ -21,7 +21,7 @@
         (Note: The two parts in the parentheses are sometimes omited depending on the content of the figure.)
 """
 
-from matplotlib.ticker import ScalarFormatter,LogLocator
+from matplotlib.ticker import ScalarFormatter, LogLocator
 from matplotlib import pyplot as plt
 from functools import partial
 from joblib import Parallel, delayed
@@ -33,7 +33,7 @@ import os, sys
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
 sys.path.append('.')
-from blindRandomness.common_func.plotting_helper import *
+from common_func.plotting_helper import *
 
 # Extend ScalarFormatter
 class MyScalarFormatter(ScalarFormatter):
@@ -188,9 +188,9 @@ for class_ in CLASSES:
             if SAVE_CSV:
                 data2save = np.column_stack((Ns, KRs))
                 HEADER = 'num of rounds in log\trate'
-                WIN_EXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
+                WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
                 ZTOL = f'ztol_{zero_tol:.0e}'
-                OUTFILE = f'{CLS}-{WIN_EXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
+                OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
                 np.savetxt(OUTFILE, data2save, fmt='%.5g', delimiter=',', header=HEADER)
 
 ################################ Plotting lines ################################

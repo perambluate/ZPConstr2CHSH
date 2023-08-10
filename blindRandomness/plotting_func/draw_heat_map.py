@@ -18,7 +18,7 @@ import os, sys
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
 sys.path.append('.')
-from blindRandomness.common_func.plotting_helper import *
+from common_func.plotting_helper import *
 
 ### Choose 'beta' or 'nup' to decide which parameter to scan;
 ###   use 'both' to produce two subplots for both params

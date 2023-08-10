@@ -9,7 +9,7 @@ import os, sys
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
 sys.path.append('.')
-from blindRandomness.common_func.plotting_helper import *
+from common_func.plotting_helper import *
 
 ### To save file or not
 SAVE = True
