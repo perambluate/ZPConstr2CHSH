@@ -31,8 +31,10 @@ linewidth = 3
 ### Set matplotlib plotting params
 mplParams = plot_settings(title = titlesize, tick = ticksize, legend = legendsize, linewidth = linewidth)
 mplParams["xtick.major.pad"] = 10
-
 plt.rcParams.update(mplParams)
+MARKERS = ['.', 'x', '*', '+']
+prop_cycler = cycler(color = 'bgrk') + cycler(marker = MARKERS)
+plt.rc('axes', prop_cycle = prop_cycler)
 
 EPSILON = 1e-12             # Smoothness of smooth min entropy (related to secrecy)
 WIN_TOL = 1e-4              # Tolerant error for win prob
@@ -47,9 +49,11 @@ DATA_DIR = './data/opt_gamma'
 OUT_DIR = './figures/corrected_FER/gamma_test'
 
 CLASSES = ['CHSH', '1', '2c', '3b']
+fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
+counter = 0
 
 for class_ in CLASSES:
-    fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
+    # fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
     
     CLS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
     max_win = CLASS_MAX_WIN[class_]
@@ -62,32 +66,31 @@ for class_ in CLASSES:
 
     Ns = data[0]
     GAMs = data[2]
-    plt.scatter(Ns, GAMs, label = class_)
+    alpha = 0.5 if (counter % 4 == 2) else 1    # Decrease opacity for star-like marker
+    plt.plot(Ns, GAMs, label = class_, linestyle='', markersize=12, alpha=alpha)
+    counter += 1
 
-    YLABEL = r'$\displaystyle \gamma$'+' (testing ratio)'
-    XLABEL = r'$\displaystyle n$'+' (number of rounds)'
-    plt.ylabel(YLABEL)
-    plt.xlabel(XLABEL)
-    plt.xscale("log")
-    plt.yscale("log")
-    ax = plt.gca()
-    plt.legend(prop={"weight":"bold"}, loc='best')
+plt.ylabel(r'$\displaystyle \gamma$'+' (testing ratio)')
+plt.xlabel(r'$\displaystyle n$'+' (number of rounds)')
+plt.xscale("log")
+plt.yscale("log")
+plt.legend(prop={"weight":"bold"}, loc='best')
 
-    plt.grid()
+plt.grid()
 
-    plt.subplots_adjust(**SUBPLOT_PARAM)
+plt.subplots_adjust(**SUBPLOT_PARAM)
 
-    if SAVE:
-        ### General File Name Settings
-        COM = 'gamma_over_n'
-        WEXP = 'QBOUND'
-        TAIL = ''
-        FORMAT = 'png'
-        OUT_NAME = f'{COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}'
-        # OUT_NAME = f'{COM}-all_cls-{WEXP}'
-        if TAIL:
-            OUT_NAME += f'-{TAIL}'
-        out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
-        plt.savefig(out_path, format = FORMAT)
-    if SHOW:
-        plt.show()
+if SAVE:
+    ### General File Name Settings
+    COM = 'gamma_over_n'
+    WEXP = 'QBOUND'
+    TAIL = '0'
+    FORMAT = 'png'
+    # OUT_NAME = f'{COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}'
+    OUT_NAME = f'{COM}-all_cls-{WEXP}'
+    if TAIL:
+        OUT_NAME += f'-{TAIL}'
+    out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
+    plt.savefig(out_path, format = FORMAT)
+if SHOW:
+    plt.show()

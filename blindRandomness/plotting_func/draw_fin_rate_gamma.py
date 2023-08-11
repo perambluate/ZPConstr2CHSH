@@ -28,11 +28,9 @@ linewidth = 3
 ### Set matplotlib plotting params
 mplParams = plot_settings(title = titlesize, tick = ticksize, legend = legendsize, linewidth = linewidth)
 mplParams["xtick.major.pad"] = 10
-
+prop_cycler = cycler(color=['gray']) * cycler(linestyle=['solid', 'dashed', 'dashdot', 'dotted'])
+mplParams["axes.prop_cycle"] = prop_cycler
 plt.rcParams.update(mplParams)
-plt.rc('axes', prop_cycle=(cycler('color', ['gray']) *\
-                           cycler('linestyle', 
-                                  ['solid', 'dashed', 'dashdot', 'dotted', (0,(3, 1, 1, 1, 1, 1))])))
 
 ### Parallel settings
 N_JOB = 8
@@ -54,7 +52,7 @@ CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
 
 SAVE = True         # To save figure or not
 SHOW = False        # To show figure or not
-SAVECSV = True     # To save data or not
+SAVECSV = False     # To save data or not
 ### Common file names
 QUAD = 'M_12'
 EPS = f'eps_{EPSILON:.0e}'
@@ -79,8 +77,8 @@ NU_PRIME_SLICE = 50
 NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 
 ### Plot with different gamma
-# GAMMAs = [1e-3, 1e-2, 5e-2, 0.1, 0.5]
-CLASSES = ['CHSH', '1', '2c']
+# GAMMAs = [1e-3, 1e-2, 5e-2, 0.1]
+CLASSES = ['CHSH', '1', '2c', '3b']
 ZERO_TOL = 1e-9
 
 ################################ Iter for different parameters ################################
@@ -139,17 +137,9 @@ for class_ in CLASSES:
                                 for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
         cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in GAMMAs])
         net_rand = (gen_rand.T - cost).T
-        # print(net_rand.shape)
         max_id =  np.argmax(net_rand) + 1
-        # print(max_id)
-        # print(math.ceil(max_id / (NU_PRIME_SLICE*BETA_SLICE)))
         max_gamma = GAMMAs[math.ceil(max_id / (NU_PRIME_SLICE*BETA_SLICE))-1]
-        max_id = max_id % (NU_PRIME_SLICE*BETA_SLICE)
-        max_beta = BETAs[max_id % BETA_SLICE]
-        max_id = math.ceil(max_id / BETA_SLICE)
-        max_nup = NU_PRIMEs[max_id-1]
-        opt_fin_rate = kr_func(n = n, beta = max_beta, nu_prime = max_nup, gamma = max_gamma) -\
-                         inp_rand_consumption(max_gamma, INP_DIST)
+        opt_fin_rate = net_rand.flatten()[max_id - 1]
         return opt_fin_rate, max_gamma
     
     opt_gamma = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_with_testing)(N) for N in Ns)
@@ -191,7 +181,7 @@ for class_ in CLASSES:
         ### General File Name Settings
         COM = 'opt_test_ratio'
         WEXP = 'QBOUND'
-        TAIL = '1'
+        TAIL = 'test'
         FORMAT = 'png'
         OUT_NAME = f'{COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}'
         if TAIL:
