@@ -86,27 +86,35 @@ N_JOB = 8
 CHSH_W_Q = (2 + math.sqrt(2))/4    # CHSH win prob
 EPSILON = 1e-12                     # Smoothness of smooth min entropy (related to secrecy)
 WIN_TOL = 1e-4                      # Tolerant error for win prob
-GAMMA = 1e-2                        # Testing ratio
+# GAMMA = 1e-2                        # Testing ratio
+INP_DIST = [1/4]*4
 
 ### General File Name Settings
-OUT_DIR = os.path.join(TOP_DIR, 'figures/corrected_FER')
+OUT_DIR = os.path.join(TOP_DIR, 'figures/corrected_FER/w_max_77')
 EPS = f'eps_{EPSILON:.0e}'
 WTOL = f'wtol_{WIN_TOL:.0e}'
-GAM = f'gam_{GAMMA:.0e}'
+# GAM = f'gam_{GAMMA:.0e}'
 
 ### Num of rounds
 N_RANGE = (1e7, 1e14)
-Ns = np.geomspace(*N_RANGE, num=200)
+N_SLICE = 100
+Ns = np.geomspace(*N_RANGE, num=N_SLICE)
 
 ### Freely tunable params
 #### Param related to alpha-Renyi entropy
-BETA_SLICE = 150
+BETA_SLICE = 50
 BETAs = np.geomspace(1e-4, 1e-11, num=BETA_SLICE)
+
+#### Testing ratio
+GAMMA_SLICE = 50
+GAMMAs = 1/np.geomspace(10, 10000, num=GAMMA_SLICE)
+
 #### Another tunable param
 NU_PRIME_SLICE = 50
 NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 
-CLASSES = ['1','2a','2b','2b_swap','2c','3a','3b']
+# CLASSES = ['1','2a','2b','2b_swap','2c','3a','3b']
+CLASSES = ['3b']
 ZERO_TOLs = [1e-9, 1e-5, 1e-3]
 
 #### Colors for different winning probabilities
@@ -164,16 +172,21 @@ for class_ in CLASSES:
 
 ##################### Compute key rate with optimal parameters #####################
             ### Construct key rate function with fixed param (only leave n, beta tunable)
-            kr_func = partial(fin_rate_testing, gamma = GAMMA, asym_rate = asym_rate,
+            kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                                 lambda_ = lambda_, c_lambda = c_lambda,
                                 zero_tol = zero_tol, zero_class=class_, max_p_win = max_p_win)
             
-            def opt_all(n, beta_arr = BETAs, nu_prime_arr = NU_PRIMEs):
-                    return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nu_prime) \
-                                            for nu_prime in nu_prime_arr for beta in beta_arr]))
+            def opt_all(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
+                # return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nu_prime) \
+                #                         for nu_prime in nup_arr for beta in beta_arr]))
+                gen_rand = np.array([[kr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
+                                for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
+                cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
+                net_rand = (gen_rand.T - cost).T
+                return max(np.max(net_rand), 0)
 
-            KRs = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_all)(N) for N in Ns)
-            KRs = np.array(KRs)
+            FRs = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_all)(N) for N in Ns)
+            FRs = np.array(FRs)
             
 ##################################### Draw line ##################################### 
             ### Colors for different zero tolerances
@@ -183,18 +196,19 @@ for class_ in CLASSES:
             label = r'$\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
 
             if PRINT_DATA:
-                print(np.column_stack((Ns, KRs)))
+                print(np.column_stack((Ns, FRs)))
 
             if SAVE_CSV:
-                data2save = np.column_stack((Ns, KRs))
+                data2save = np.column_stack((Ns, FRs))
                 HEADER = 'num of rounds in log\trate'
                 WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
                 ZTOL = f'ztol_{zero_tol:.0e}'
-                OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
+                # OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
+                OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}.csv'
                 np.savetxt(OUTFILE, data2save, fmt='%.5g', delimiter=',', header=HEADER)
 
 ################################ Plotting lines ################################
-            axs[i].plot(Ns, KRs,
+            axs[i].plot(Ns, FRs,
                     linestyle = line, color = color, label = label)
             titles.append(r'$\displaystyle w_{exp}$'+f'={win_prob:.4g}')
 
@@ -220,10 +234,11 @@ for class_ in CLASSES:
     fig.tight_layout(pad=1)
 
     if SAVE:
-        COM = 'FER-w_max_77'
+        COM = 'fin_blind-inp_consump-w_max_77'
         TAIL = 'test'
         FORMAT = 'png'
-        OUT_NAME = f'{COM}-{CLS}-{INPUT}-{EPS}-{WTOL}-{GAM}-{QUAD}'
+        # OUT_NAME = f'{COM}-{CLS}-{INPUT}-{EPS}-{WTOL}-{GAM}-{QUAD}'
+        OUT_NAME = f'{COM}-{CLS}-{INPUT}-{EPS}-{WTOL}-{QUAD}'
         if TAIL:
             OUT_NAME += f'-{TAIL}'
         out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')

@@ -66,10 +66,10 @@ Ns = np.geomspace(*N_RANGE, num=N_SLICE)
 
 #### Testing ratio
 GAMMA_SLICE = 50
-GAMMAs = 1/np.geomspace(10, 10000, GAMMA_SLICE)
+GAMMAs = 1/np.geomspace(10, 10000, num=GAMMA_SLICE)
 
 #### Param related to alpha-Renyi entropy
-BETA_SLICE = 150
+BETA_SLICE = 50
 BETAs = np.geomspace(1e-4, 1e-11, num=BETA_SLICE)
 
 #### Another tunable param
@@ -129,20 +129,20 @@ for class_ in CLASSES:
         label = r'$\displaystyle \gamma={:.1g}$'.format(gamma)
         plt.plot(Ns, netFRs, label = label)
 
-    def opt_with_testing(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
+    def opt_with_gamma(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
         kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                             lambda_ = lambda_, c_lambda = c_lambda,
                             zero_tol = ZERO_TOL, zero_class=class_, max_p_win = max_p_win)
         gen_rand = np.array([[kr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
                                 for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
-        cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in GAMMAs])
+        cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
         net_rand = (gen_rand.T - cost).T
         max_id =  np.argmax(net_rand) + 1
-        max_gamma = GAMMAs[math.ceil(max_id / (NU_PRIME_SLICE*BETA_SLICE))-1]
+        max_gamma = gam_arr[math.ceil(max_id / (NU_PRIME_SLICE*BETA_SLICE))-1]
         opt_fin_rate = net_rand.flatten()[max_id - 1]
-        return opt_fin_rate, max_gamma
+        return max(opt_fin_rate, 0), max_gamma
     
-    opt_gamma = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_with_testing)(N) for N in Ns)
+    opt_gamma = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_with_gamma)(N) for N in Ns)
     opt_gamma = list(zip(*opt_gamma))
     optFRs = np.array(opt_gamma[0])
     optGAMMAs = np.array(opt_gamma[1])
