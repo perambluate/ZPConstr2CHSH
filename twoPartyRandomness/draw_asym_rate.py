@@ -6,7 +6,7 @@ import re
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
 sys.path.append('..')
-from blindRandomness.common_func.plotting_helper import *
+from common_func.plotting_helper import *
 
 TOP = './'
 DATA_DIR = os.path.join(TOP,'data')

@@ -8,7 +8,7 @@ import os, sys
 
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
-sys.path.append('.')
+sys.path.append('..')
 from common_func.plotting_helper import *
 
 ### To save file or not
@@ -34,7 +34,7 @@ CLASSES = ['2a']
 ### Tolerance error for zero-probability constraints
 #ERRORS = ['1e-05', '1e-04', '1e-03', '1e-02', '1e-01']
 
-CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
+CLASS_INPUT_MAP = {'chsh': '00', '1': '01', '2a': '11',
                    '2b': '01', '2b_swap': '11', '2c': '10',
                    '3a': '11', '3b': '10'}
 
@@ -66,7 +66,7 @@ for class_ in CLASSES:
     plt.subplots_adjust(**SUBPLOT_PARAM)
 
     input_ = CLASS_INPUT_MAP[class_]
-    CLS = f'cls_{class_}'
+    CLS = class_
     INP = f'xy_{input_}'
     
     GAMMAs = [0.25, 0.4, 0.5, 0.6, 0.7, 0.8]

@@ -32,7 +32,7 @@ import os, sys
 
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
-sys.path.append('.')
+sys.path.append('..')
 from common_func.plotting_helper import *
 
 # Extend ScalarFormatter
@@ -132,8 +132,8 @@ for class_ in CLASSES:
     LINES = itertools.cycle(('solid', 'dashed', 'dashdot', 'dotted'))
 
     ### Specify the file record the data
-    HEAD = 'lr_bff21'
-    CLS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
+    HEAD = 'br'
+    CLS = class_
     INPUT = f'xy_{input_}'
     QUAD = 'M_12'
 

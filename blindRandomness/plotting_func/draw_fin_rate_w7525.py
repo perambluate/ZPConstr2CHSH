@@ -31,7 +31,7 @@ import os, sys
 
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
-sys.path.append('.')
+sys.path.append('..')
 from common_func.plotting_helper import *
 
 ### An option to print values of data
@@ -51,7 +51,7 @@ if not SHOW:
 TOP_DIR = './'
 DATA_DIR = os.path.join(TOP_DIR, 'data/bff21_zero')
 
-CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
+CLASS_INPUT_MAP = {'chsh': '00', '1': '01', '2a': '11',
                    '2b': '01', '2b_swap': '11', '2c': '10',
                    '3a': '11', '3b': '10'}
 
@@ -111,7 +111,7 @@ fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
 gs = fig.add_gridspec(2, hspace=0)
 axs = gs.subplots(sharex=True)
 
-CLASSES = ['CHSH','1','2c','3b']
+CLASSES = ['chsh','1','2c','3b']
 # COLORS = ('blue','firebrick','forestgreen','gray')
 COLORS = ('blue','forestgreen','firebrick','gray')
 
@@ -129,7 +129,7 @@ for class_ in CLASSES:
 
     ### Specify the file record the data
     HEAD = 'lr_bff21'
-    CLS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
+    CLS = class_
     INPUT = f'xy_{input_}'
     QUAD = 'M_12'
 
@@ -160,7 +160,7 @@ for class_ in CLASSES:
 
         win_prob, asym_rate, lambda_ = data_mtf[0][:3]
         c_lambda = data_mtf[0][-1]
-        if class_ != 'CHSH':
+        if class_ != 'chsh':
             lambda_zeros = data_mtf[0][3:-1]
             c_lambda -= sum(lambda_zeros)*zero_tol
 
@@ -186,7 +186,7 @@ for class_ in CLASSES:
         
 ##################################### Draw line #####################################        
         ### Set labels of legends
-        label = f'class {class_}' if class_ != 'CHSH' else 'CHSH'
+        label = f'class {class_}' if class_ != 'chsh' else 'CHSH'
         # label += r' $\displaystyle x^*y^*$'+f'={input_}' + \
         #             r' $\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
         label += r' $\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'

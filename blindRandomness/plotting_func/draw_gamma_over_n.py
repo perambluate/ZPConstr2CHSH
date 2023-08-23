@@ -8,7 +8,7 @@ import os, sys
 
 ### Add directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
-sys.path.append('.')
+sys.path.append('..')
 from common_func.plotting_helper import *
 
 CLASS_MAX_WIN = {'CHSH': 0.8535, '1': 0.8294, '2a': 0.8125,

@@ -30,7 +30,7 @@ import os, sys
 
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
-sys.path.append('.')
+sys.path.append('..')
 from common_func.plotting_helper import *
 
 ### An option to print values of data
@@ -50,7 +50,7 @@ if not SHOW:
 TOP_DIR = './'
 DATA_DIR = os.path.join(TOP_DIR, 'data/bff21_zero/w_max_77')
 
-CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
+CLASS_INPUT_MAP = {'chsh': '00', '1': '01', '2a': '11',
                    '2b': '01', '2b_swap': '11', '2c': '10',
                    '3a': '11', '3b': '10'}
 
@@ -114,7 +114,7 @@ NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
 
 ### All classes to plot
-CLASSES = ['CHSH','1','2c','3b']
+CLASSES = ['chsh','1','2c','3b']
 ZERO_TOLs = [1e-9]
 
 ################################ Iter for different parameters ################################
@@ -123,8 +123,8 @@ for class_ in CLASSES:
     input_ = CLASS_INPUT_MAP[class_]
 
     ### Specify the file record the data
-    HEAD = 'lr_bff21'
-    CLS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
+    HEAD = 'br'
+    CLS = class_
     INPUT = f'xy_{input_}'
     QUAD = 'M_12'
     # WTOL = f'wtol_{WIN_TOL:.0e}'
@@ -150,7 +150,7 @@ for class_ in CLASSES:
         #### For different w_exp (or other parameters) in the data
         win_prob, asym_rate, lambda_ = data_mtf[0][:3]
         c_lambda = data_mtf[0][-1]
-        if class_ != 'CHSH':
+        if class_ != 'chsh':
             lambda_zeros = data_mtf[0][3:-1]
             c_lambda -= sum(lambda_zeros)*zero_tol
 
@@ -173,7 +173,7 @@ for class_ in CLASSES:
         FRs = np.array(FRs)
         
 ##################################### Draw line ##################################### 
-        label = f'class {class_}' if class_ != 'CHSH' else 'CHSH'
+        label = f'class {class_}' if class_ != 'chsh' else 'CHSH'
         #### Single plot for max win prob
         label += r' $\displaystyle x^*y^*$'+f'={input_}' + \
                     r' $\displaystyle w_{exp}$'+f'={win_prob:.4f}'

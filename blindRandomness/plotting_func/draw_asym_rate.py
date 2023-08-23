@@ -22,7 +22,7 @@ import re
 
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
-sys.path.append('.')
+sys.path.append('..')
 from common_func.plotting_helper import *
 
 ### Choose 'opt_avg', or 'max_in', or 'min_in', or 'avg_in'

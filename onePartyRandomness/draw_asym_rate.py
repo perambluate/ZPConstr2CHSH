@@ -6,13 +6,13 @@ import re
 ### Add current directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
 sys.path.append('..')
-from blindRandomness.common_func.plotting_helper import *
+from common_func.plotting_helper import *
 
 TOP = './'
 DATA_DIR = os.path.join(TOP,'data')
 X_NORMALIZED = False
-ZERO_CLASS = ['CHSH','1','2a','2b','2b_swap','2c','3a','3b']
-DATA_COMMON = 'diqkd_bff21'
+ZERO_CLASS = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
+DATA_COMMON = 'opr_bff21'
 
 OUT_DIR = './figures'
 SORT = False
@@ -26,7 +26,8 @@ ticksize = 28
 legendsize = 28
 linewidth = 3
 
-mplParams = plot_settings(title = titlesize, tick = ticksize, legend = legendsize, linewidth = linewidth)
+mplParams = plot_settings(title = titlesize, tick = ticksize, \
+                          legend = legendsize, linewidth = linewidth)
 plt.rcParams.update(mplParams)
 
 FIG_SIZE = (12, 9)
@@ -43,16 +44,14 @@ plt.subplots_adjust(**SUBPLOT_PARAM)
 
 ### Average/max over different inputs
 for cls in ZERO_CLASS:
-    if cls == 'CHSH':
-        file_list = [f'{DATA_COMMON}-CHSH-x_{x}-M_12-wtol_1e-04-ztol_1e-09.csv' for x in range(2)]
-    else:
-        file_list = [f'{DATA_COMMON}-class_{cls}-x_{x}-M_12-wtol_1e-04-ztol_1e-09.csv' \
-                     for x in range(2)]
+    file_list = [f'{DATA_COMMON}-{cls}-x_{x}-M_12-wtol_1e-04-ztol_1e-09.csv' \
+                 for x in range(2)]
 
     data_list = []
     for i in range(len(file_list)):
         file_ = file_list[i]
-        data = np.genfromtxt(os.path.join(DATA_DIR, file_), delimiter=',', skip_header=3).T
+        data = np.genfromtxt(
+                    os.path.join(DATA_DIR, file_), delimiter=',', skip_header=3).T
         data = data[:2,:]
         if SORT:
             data = sort_data(data)
@@ -65,7 +64,7 @@ for cls in ZERO_CLASS:
     ### Maximize
     max_input = np.argmax(np.array(data_list)[:,1][:,0])
     data = data_list[max_input]
-    class_name = f'class\ {cls}' if cls != 'CHSH' else 'CHSH'
+    class_name = f'class\ {cls}' if cls != 'chsh' else 'CHSH'
     class_name = class_name.replace("_swap", "\\textsubscript{swap}")
     label = r'{} $\displaystyle x^*={}$'.format(class_name, max_input)
     

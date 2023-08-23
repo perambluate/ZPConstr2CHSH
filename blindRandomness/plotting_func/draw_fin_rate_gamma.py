@@ -12,7 +12,7 @@ import os, sys
 
 ### Add directory to Python path
 # (Note: this works when running the command in the dir. 'blindRandomness')
-sys.path.append('.')
+sys.path.append('..')
 from common_func.plotting_helper import *
 
 ######### Plotting settings #########
@@ -46,7 +46,7 @@ TOP_DIR = './'
 DATA_DIR = os.path.join(TOP_DIR, 'data/bff21_zero/w_max_77')
 OUT_DIR = os.path.join(TOP_DIR, 'figures/corrected_FER/gamma_test')
 OUTCSV_DIR = os.path.join(TOP_DIR, './data/opt_gamma')
-CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
+CLASS_INPUT_MAP = {'chsh': '00', '1': '01', '2a': '11',
                    '2b': '01', '2b_swap': '11', '2c': '10',
                    '3a': '11', '3b': '10'}
 
@@ -78,7 +78,7 @@ NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 
 ### Plot with different gamma
 # GAMMAs = [1e-3, 1e-2, 5e-2, 0.1]
-CLASSES = ['CHSH', '1', '2c', '3b']
+CLASSES = ['chsh', '1', '2c', '3b']
 ZERO_TOL = 1e-9
 
 ################################ Iter for different parameters ################################
@@ -87,7 +87,7 @@ for class_ in CLASSES:
     input_ = CLASS_INPUT_MAP[class_]
 
     HEAD = 'lr_bff21'
-    CLS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
+    CLS = class_
     INP = f'xy_{input_}'
     ZTOL = f'ztol_{ZERO_TOL:.0e}'
     DATA_FILE = f'{HEAD}-{CLS}-{INP}-{QUAD}-{WTOL}-{ZTOL}.csv'
@@ -106,7 +106,7 @@ for class_ in CLASSES:
     for gamma in [0.05, 0.01, 0.001]:
         win_prob, asym_rate, lambda_ = data_mtf[0][:3]
         c_lambda = data_mtf[0][-1]
-        if class_ != 'CHSH':
+        if class_ != 'chsh':
             lambda_zeros = data_mtf[0][3:-1]
             c_lambda -= sum(lambda_zeros)*ZERO_TOL
 
