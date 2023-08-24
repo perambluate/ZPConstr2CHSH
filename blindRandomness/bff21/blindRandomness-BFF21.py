@@ -17,7 +17,7 @@ from common_func.SDP_helper import *
 
 SAVEDATA = False                # Set the data into file
 TIMMING = True                  # True for timming
-OUTDIR = './data/bff21_zero'   # Folder for the data to save
+OUT_DIR = './data/BFF21'   # Folder for the data to save
 
 LEVEL = 2                       # NPA relaxation level
 M = 6                           # Num of terms in Gauss-Radau quadrature = 2*M
@@ -264,16 +264,16 @@ for zero_class in ZERO_CLASS:
                 ZTOL = f'ztol_{zero_tol:.0e}'
                 QUAD = f'M_{M*2}'
                 GAM = f'gam_{gamma*100:.0f}'
-                OUTFILE = f'{COM}-{CLS}-{INP}-{GAM}-{WTOL}-{ZTOL}-{QUAD}.csv'
-                OUTPATH = os.path.join(OUTDIR, OUTFILE)
+                OUT_FILE = f'{COM}-{CLS}-{INP}-{GAM}-{WTOL}-{ZTOL}-{QUAD}.csv'
+                OUT_PATH = os.path.join(OUT_DIR, OUT_FILE)
                 
-                if os.path.exists(OUTPATH):
-                    with open(OUTPATH, 'ab') as file:
+                if os.path.exists(OUT_PATH):
+                    with open(OUT_PATH, 'ab') as file:
                         file.write(b'\n')
                         file.write(bytes(MAX_P_WIN, 'utf-8') + b'\n')
                         np.savetxt(file, data, fmt='%.5g', delimiter=',', header=HEADER)
                 else:
-                    with open(OUTPATH, 'wb') as file:
+                    with open(OUT_PATH, 'wb') as file:
                         file.write(bytes(MAX_P_WIN, 'utf-8') + b'\n')
                         np.savetxt(file, data, fmt='%.5g', delimiter=',', header=HEADER)
                 

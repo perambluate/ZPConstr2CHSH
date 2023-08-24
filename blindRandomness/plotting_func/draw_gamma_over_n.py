@@ -45,8 +45,8 @@ WTOL = f'wtol_{WIN_TOL:.0e}'
 ZTOL = f'ztol_{ZERO_TOL:.0e}'
 QUAD = 'M_12'
 
-DATA_DIR = './data/opt_gamma'
-OUT_DIR = './figures/corrected_FER/gamma_test'
+DATA_DIR = './data/BFF21/fin_rate/opt_gamma'
+OUT_DIR = './figures/BFF21/fin_rate/gamma_test'
 
 CLASSES = ['CHSH', '1', '2c', '3b']
 fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)

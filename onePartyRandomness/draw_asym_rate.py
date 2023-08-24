@@ -12,7 +12,7 @@ TOP = './'
 DATA_DIR = os.path.join(TOP,'data')
 X_NORMALIZED = False
 ZERO_CLASS = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
-DATA_COMMON = 'opr_bff21'
+DATA_COM = 'opr_bff21'
 
 OUT_DIR = './figures'
 SORT = False
@@ -44,7 +44,7 @@ plt.subplots_adjust(**SUBPLOT_PARAM)
 
 ### Average/max over different inputs
 for cls in ZERO_CLASS:
-    file_list = [f'{DATA_COMMON}-{cls}-x_{x}-M_12-wtol_1e-04-ztol_1e-09.csv' \
+    file_list = [f'{DATA_COM}-{cls}-x_{x}-M_12-wtol_1e-04-ztol_1e-09.csv' \
                  for x in range(2)]
 
     data_list = []
@@ -94,10 +94,10 @@ if X_NORMALIZED:
     X_TITLE += ' (normalized with quantum bound)'
 plt.xlabel(X_TITLE)
 plt.ylabel(r"$\displaystyle H(A|XYE')$")
-OUT_COMMON = 'spr-asymp'
+OUT_COM = 'spr-asymp'
 TAIL = 'test'
 FORMAT = 'png'
-OUT_NAME = f'{OUT_COMMON}-all_cls'
+OUT_NAME = f'{OUT_COM}-all_cls'
 if TAIL:
     OUT_NAME = f'{OUT_NAME}-{TAIL}'
 OUT_FILE = f'{OUT_NAME}.{FORMAT}'

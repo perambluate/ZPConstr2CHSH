@@ -55,11 +55,11 @@ OUT_DIR = './figures'
 SCENARIO = ['BFF21']
 ### Class: 1, 2a, 2b, 2b_swap, 2c, 3a, 3b (standard CHSH is added automatically)
 if ALL_CLS:
-    CLASSES = ['CHSH','1','2a','2b','2b_swap','2c','3a','3b']
+    CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
     #CLASSES = ['1','2a','2b','2c','3a','3b']
 else:
     # CLASSES = ['1','2c','3b']
-    CLASSES = ['CHSH','1','3b']
+    CLASSES = ['chsh','1','3b']
 
 ### Tolerance error for zero-probability constraints
 #ERRORS = ['1e-05', '1e-04', '1e-03', '1e-02', '1e-01']
@@ -116,31 +116,31 @@ for scenario in SCENARIO:
     else:
         DATA_DIR = os.path.join(PYTHON_TOP,'data',scenario)
 
-    DATA_COMMON = 'local_randomness'
+    DATA_COM = 'br'
     
     for cls in CLASSES:
         data_list = []
-        class_name = f'class {cls}' if cls != 'CHSH' else 'CHSH'
+        cls_name = f'class {cls}' if cls != 'chsh' else 'CHSH'
         
         if OPT == 'opt_avg':
-            if cls == 'CHSH':
-                file_ = f'{DATA_COMMON}-CHSH-avg_in-{scenario}.csv'
+            if cls == 'chsh':
+                file_ = f'{DATA_COM}-chsh-avg_in-{scenario}.csv'
             else:
-                file_ = f'{DATA_COMMON}-class_{cls}-avg_in-{scenario}.csv'
+                file_ = f'{DATA_COM}-class_{cls}-avg_in-{scenario}.csv'
             data = np.genfromtxt(os.path.join(DATA_DIR, file_), delimiter=',').T
             if SORT:
                 data = sort_data(data)
             if TAKE_LOG:
                 data = [data[0], -np.log2(data[1])]
-            label = f'{class_name}'
+            label = f'{cls_name}'
             
         else:
             file_list = []
-            if cls == 'CHSH':
-                file_list += [f'{DATA_COMMON}-CHSH-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
+            if cls == 'chsh':
+                file_list += [f'{DATA_COM}-chsh-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
                             for x in range(2) for y in range(2)]
             else:
-                file_list += [f'{DATA_COMMON}-class_{cls}-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
+                file_list += [f'{DATA_COM}-class_{cls}-xy_{x}{y}-M_12-dev_1e-05-{scenario}.csv' \
                                 for x in range(2) for y in range(2)]
             for file_ in file_list:
                 data = np.genfromtxt(os.path.join(DATA_DIR, file_), delimiter=',').T
@@ -153,22 +153,22 @@ for scenario in SCENARIO:
             ### Average
             if OPT == 'avg_in':
                 data = np.average(data_list, axis=0)
-                label = f'{class_name}'
+                label = f'{cls_name}'
             
             ### Maximize
             elif OPT == 'max_in':
                 max_input = np.argmax(np.array(data_list)[:,1][:,0])
                 data = data_list[max_input]
-                class_name = f'class\ {cls}' if cls != 'CHSH' else 'CHSH'
-                # class_name = class_name.replace("swap", "{swap}")
-                class_name = class_name.replace("_swap", "\\textsubscript{swap}")
-                label = r'{} $\displaystyle x^*y^*={:0>2b}$'.format(class_name, max_input)
+                cls_name = f'class\ {cls}' if cls != 'chsh' else 'CHSH'
+                # cls_name = cls_name.replace("swap", "{swap}")
+                cls_name = cls_name.replace("_swap", "\\textsubscript{swap}")
+                label = r'{} $\displaystyle x^*y^*={:0>2b}$'.format(cls_name, max_input)
 
             ### Minimize
             elif OPT == 'min_in':
                 min_input = np.argmin(np.array(data_list)[:,1][:,0])
                 data = data_list[min_input]
-                label = f'{class_name} xy={min_input:0>2b}' # ({scenario})'
+                label = f'{cls_name} xy={min_input:0>2b}' # ({scenario})'
 
         color='gray'
         if '1' in cls:

@@ -44,7 +44,7 @@ class MyScalarFormatter(ScalarFormatter):
 ### An option to print values of data
 PRINT_DATA = False
 ### An option to the data into a csv file
-SAVE_CSV = False
+SAVECSV = False
 ### To save file or not
 SAVE = True
 ### To show figure or not
@@ -56,11 +56,11 @@ if not SHOW:
 
 ### Data paths
 TOP_DIR = './'
-DATA_DIR = os.path.join(TOP_DIR, 'data/bff21_zero/w_max_77')
+DATA_DIR = os.path.join(TOP_DIR, 'data/BFF21/w_max_77')
+OUT_DIR = os.path.join(TOP_DIR, 'figures/BFF21/fin_rate/w_max_77')
+OUTCSV_DIR = os.path.join(TOP_DIR, 'data/BFF21/fin_rate')
 
-CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
-                   '2b': '01', '2b_swap': '11', '2c': '10',
-                   '3a': '11', '3b': '10'}
+CLASS_INPUT_MAP = cls_inp_map('blind')
 
 ######### Plotting settings #########
 FIG_SIZE = (16, 9)      # for aspect ratio 16:9
@@ -90,7 +90,6 @@ WIN_TOL = 1e-4                      # Tolerant error for win prob
 INP_DIST = [1/4]*4
 
 ### General File Name Settings
-OUT_DIR = os.path.join(TOP_DIR, 'figures/corrected_FER/w_max_77')
 EPS = f'eps_{EPSILON:.0e}'
 WTOL = f'wtol_{WIN_TOL:.0e}'
 # GAM = f'gam_{GAMMA:.0e}'
@@ -122,8 +121,8 @@ COLORS = ('darkcyan','darkred')
 
 ################################ Iter for different parameters ################################
 ### Run over all classes in CLASSES
-for class_ in CLASSES:
-    input_ = CLASS_INPUT_MAP[class_]
+for cls in CLASSES:
+    input_ = CLASS_INPUT_MAP[cls]
 
     #### Two subplots for max win and 0.77
     fig, axs = plt.subplots(1, 2, figsize=FIG_SIZE, dpi=DPI)
@@ -133,7 +132,7 @@ for class_ in CLASSES:
 
     ### Specify the file record the data
     HEAD = 'br'
-    CLS = class_
+    CLS = cls
     INPUT = f'xy_{input_}'
     QUAD = 'M_12'
 
@@ -166,7 +165,7 @@ for class_ in CLASSES:
         for i in range(data_len):
             win_prob, asym_rate, lambda_ = data_mtf[i][:3]
             c_lambda = data_mtf[i][-1]
-            if class_ != 'CHSH':
+            if cls != 'CHSH':
                 lambda_zeros = data_mtf[i][3:-1]
                 c_lambda -= sum(lambda_zeros)*zero_tol
 
@@ -174,7 +173,7 @@ for class_ in CLASSES:
             ### Construct key rate function with fixed param (only leave n, beta tunable)
             kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                                 lambda_ = lambda_, c_lambda = c_lambda,
-                                zero_tol = zero_tol, zero_class=class_, max_p_win = max_p_win)
+                                zero_tol = zero_tol, zero_class=cls, max_p_win = max_p_win)
             
             def opt_all(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
                 # return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nu_prime) \
@@ -198,14 +197,15 @@ for class_ in CLASSES:
             if PRINT_DATA:
                 print(np.column_stack((Ns, FRs)))
 
-            if SAVE_CSV:
+            if SAVECSV:
                 data2save = np.column_stack((Ns, FRs))
                 HEADER = 'num of rounds in log\trate'
                 WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
                 ZTOL = f'ztol_{zero_tol:.0e}'
-                # OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
-                OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}.csv'
-                np.savetxt(OUTFILE, data2save, fmt='%.5g', delimiter=',', header=HEADER)
+                # OUTCSV = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
+                OUTCSV = f'br-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}.csv'
+                OUTCSV_PATH = os.join.path(OUTCSV_DIR, OUTCSV_PATH)
+                np.savetxt(OUTCSV_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
 
 ################################ Plotting lines ################################
             axs[i].plot(Ns, FRs,
@@ -241,7 +241,7 @@ for class_ in CLASSES:
         OUT_NAME = f'{COM}-{CLS}-{INPUT}-{EPS}-{WTOL}-{QUAD}'
         if TAIL:
             OUT_NAME += f'-{TAIL}'
-        out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
-        plt.savefig(out_path, format = FORMAT)
+        OUT_PATH = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
+        plt.savefig(OUT_PATH, format = FORMAT)
     if SHOW:
         plt.show()

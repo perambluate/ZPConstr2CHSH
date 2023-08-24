@@ -38,10 +38,10 @@ N_JOB = 8
 
 ### Data paths
 TOP_DIR = './'
-DATA_DIR = os.path.join(TOP_DIR, 'data/bff21_zero/w_max_77')
-CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
-                   '2b': '01', '2b_swap': '11', '2c': '10',
-                   '3a': '11', '3b': '10'}
+DATA_DIR = os.path.join(TOP_DIR, 'data/BFF21/w_max_77')
+OUT_DIR = os.path.join(TOP_DIR, 'figures/BFF21/fin_rate/h_map')
+
+CLASS_INPUT_MAP = cls_inp_map('blind')
 
 ######### Plotting settings #########
 DPI = 200
@@ -93,22 +93,21 @@ elif SCAN == 'nup':
     X, Y = np.meshgrid(Ns, NU_PRIMEs)
 
 
-for class_ in CLASSES:
-    input_ = CLASS_INPUT_MAP[class_]
+for cls in CLASSES:
+    input_ = CLASS_INPUT_MAP[cls]
 
     # ZERO_TOLs = [1e-9, 1e-5, 1e-3]    # Tolerant error for winning prob
     ZERO_TOLs = [1e-9]
 
     for zero_tol in ZERO_TOLs:
         ### Specify the file record the data
-        HEAD = 'lr_bff21'
-        CLS = f'class_{class_}' if class_ != 'CHSH' else 'CHSH'
+        HEAD = 'br'
         INP = f'xy_{input_}'
         QUAD = 'M_12'
-        if class_ =='CHSH':
-            DATA_FILE = f'{HEAD}-{CLS}-{INP}-{QUAD}-wtol_1e-04.csv'
+        if cls =='chsh':
+            DATA_FILE = f'{HEAD}-{cls}-{INP}-{QUAD}-wtol_1e-04.csv'
         else:
-            DATA_FILE = f'{HEAD}-{CLS}-{INP}-{QUAD}-wtol_1e-04-ztol_{zero_tol:.0e}.csv'
+            DATA_FILE = f'{HEAD}-{cls}-{INP}-{QUAD}-wtol_1e-04-ztol_{zero_tol:.0e}.csv'
         DATA_PATH = os.path.join(DATA_DIR, DATA_FILE)
 
         ### Get the maximum winnin probability
@@ -126,7 +125,7 @@ for class_ in CLASSES:
             # win_prob, asym_rate, lambda_ = data_mtf[:3]
             c_lambda = data_mtf[i][-1]
             # c_lambda = data_mtf[-1]
-            if class_ != 'CHSH':
+            if cls != 'chsh':
                 lambda_zeros = data_mtf[i][3:-1]
                 # lambda_zeros = data_mtf[3:-1]
                 c_lambda -= sum(lambda_zeros)*zero_tol
@@ -134,7 +133,7 @@ for class_ in CLASSES:
             ### Construct key rate function with fixed param (only leave n, beta tunable)
             kr_func = partial(fin_rate_testing, gamma = GAMMA, asym_rate = asym_rate,
                                 lambda_ = lambda_, c_lambda = c_lambda,
-                                zero_tol = zero_tol, zero_class = class_, max_p_win = max_p_win)
+                                zero_tol = zero_tol, zero_class = cls, max_p_win = max_p_win)
             
             def opt_nup(n, beta, nu_prime_arr = NU_PRIMEs):
                 return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nu_prime) \
@@ -227,7 +226,6 @@ for class_ in CLASSES:
 
             ### Save file
             if SAVE:
-                OUT_DIR = os.path.join(TOP_DIR, 'figures/corrected_FER/h_map')
                 if SCAN == 'beta':
                     COM = 'bscan'
                 elif SCAN == 'nup':
@@ -237,7 +235,7 @@ for class_ in CLASSES:
                 WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
                 ZTOL = f'ztol_{zero_tol:.0e}'
                 TAIL= 'test'
-                OUT_NAME = f'{COM}-{CLS}-{WEXP}-{INP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}'
+                OUT_NAME = f'{COM}-{cls}-{WEXP}-{INP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}'
                 if TAIL:
                     OUT_NAME += f'-{TAIL}'
                 FORMAT = 'png'

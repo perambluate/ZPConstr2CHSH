@@ -68,7 +68,7 @@ def winProb(P, scenario = [[2,2],[2,2]], inp_probs = []):
         configB = scenario[1]
         num_y = len(configB)
     except IndexError:
-        print(f'Wrong input configs: {scenario}')
+        print(f'Wrong input scenario: {scenario}')
     win_prob = 0
     for x in range(num_x):
         for y in range(num_y):

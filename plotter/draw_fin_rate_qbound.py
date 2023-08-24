@@ -55,7 +55,7 @@ TOP_DIR = top_dir(TYPE)
 DATA_DIR = os.path.join(TOP_DIR, 'data')
 OUTCSV_DIR = os.path.join(DATA_DIR, 'fin_rate')
 if TYPE == 'blind':
-    DATA_DIR = os.path.join(DATA_DIR, 'bff21_zero/w_max_77')
+    DATA_DIR = os.path.join(DATA_DIR, 'BFF21/w_max_77')
 elif TYPE in ['one', 'two']:
     DATA_DIR = os.path.join(DATA_DIR, 'asymp_rate')
 CLASS_INPUT_MAP = cls_inp_map(TYPE)
@@ -83,7 +83,7 @@ EPS = f'eps_{EPSILON:.0e}'
 WTOL = f'wtol_{WIN_TOL:.0e}'
 QUAD = 'M_12'
 # GAM = f'gam_{GAMMA:.0e}'
-CSVHEAD = 'opt_gamma'
+CSV_COM = 'opt_gamma'
 
 ######### Plotting settings #########
 # FIG_SIZE = (16, 9)      # for aspect ratio 16:9
@@ -152,7 +152,7 @@ for cls in CLASSES:
         if DRAW_FROM_SAVED_DATA:
             WEXP = f'w_{CLASS_MAX_WIN[cls]*10000:.0f}'.rstrip('0')
             ZTOL = f'ztol_{zero_tol:.0e}'
-            DATAFILE = f'{CSVHEAD}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}.csv'
+            DATAFILE = f'{CSV_COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}.csv'
             DATAPATH = os.path.join(OUTCSV_DIR, DATAFILE)
             data = np.genfromtxt(DATAPATH, delimiter=",", skip_header = 1).T
             Ns = data[0]
@@ -223,9 +223,9 @@ for cls in CLASSES:
                 WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
                 ZTOL = f'ztol_{zero_tol:.0e}'
                 N_POINT = f'N_{N_SLICE}'
-                OUTFILE = f'{CSVHEAD}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
-                OUTPATH = os.path.join(OUTCSV_DIR, OUTFILE)
-                np.savetxt(OUTPATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
+                OUTCSV = f'{CSV_COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
+                OUTCSV_PATH = os.path.join(OUTCSV_DIR, OUTCSV)
+                np.savetxt(OUTCSV_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
 
     ##################################### Draw line ##################################### 
         class_name = f'class {cls}' if cls != 'chsh' else 'CHSH'
@@ -277,7 +277,7 @@ if SAVE:
     OUT_NAME = f'{COM}-{EPS}-{WTOL}-{QUAD}'
     if TAIL:
         OUT_NAME += f'-{TAIL}'
-    out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
-    plt.savefig(out_path, format = FORMAT)
+    OUT_PATH = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
+    plt.savefig(OUT_PATH, format = FORMAT)
 if SHOW:
     plt.show()

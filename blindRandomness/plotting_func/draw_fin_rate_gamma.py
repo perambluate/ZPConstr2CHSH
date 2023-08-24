@@ -43,12 +43,10 @@ WIN_TOL = 1e-4                      # Tolerant error for win prob
 
 ### Data paths
 TOP_DIR = './'
-DATA_DIR = os.path.join(TOP_DIR, 'data/bff21_zero/w_max_77')
-OUT_DIR = os.path.join(TOP_DIR, 'figures/corrected_FER/gamma_test')
-OUTCSV_DIR = os.path.join(TOP_DIR, './data/opt_gamma')
-CLASS_INPUT_MAP = {'chsh': '00', '1': '01', '2a': '11',
-                   '2b': '01', '2b_swap': '11', '2c': '10',
-                   '3a': '11', '3b': '10'}
+DATA_DIR = os.path.join(TOP_DIR, 'data/BFF21/w_max_77')
+OUT_DIR = os.path.join(TOP_DIR, 'figures/BFF21/fin_rate/gamma_test')
+OUTCSV_DIR = os.path.join(TOP_DIR, './data/BFF21/fin_rate/opt_gamma')
+CLASS_INPUT_MAP = cls_inp_map('blind')
 
 SAVE = True         # To save figure or not
 SHOW = False        # To show figure or not
@@ -83,11 +81,11 @@ ZERO_TOL = 1e-9
 
 ################################ Iter for different parameters ################################
 ### Run over all classes in CLASSES
-for class_ in CLASSES:
-    input_ = CLASS_INPUT_MAP[class_]
+for cls in CLASSES:
+    input_ = CLASS_INPUT_MAP[cls]
 
-    HEAD = 'lr_bff21'
-    CLS = class_
+    HEAD = 'br'
+    CLS = cls
     INP = f'xy_{input_}'
     ZTOL = f'ztol_{ZERO_TOL:.0e}'
     DATA_FILE = f'{HEAD}-{CLS}-{INP}-{QUAD}-{WTOL}-{ZTOL}.csv'
@@ -106,7 +104,7 @@ for class_ in CLASSES:
     for gamma in [0.05, 0.01, 0.001]:
         win_prob, asym_rate, lambda_ = data_mtf[0][:3]
         c_lambda = data_mtf[0][-1]
-        if class_ != 'chsh':
+        if cls != 'chsh':
             lambda_zeros = data_mtf[0][3:-1]
             c_lambda -= sum(lambda_zeros)*ZERO_TOL
 
@@ -115,7 +113,7 @@ for class_ in CLASSES:
         def opt_all(n, beta_arr = BETAs, nu_prime_arr = NU_PRIMEs):
                 kr_func = partial(fin_rate_testing, gamma = gamma, asym_rate = asym_rate,
                                     lambda_ = lambda_, c_lambda = c_lambda,
-                                    zero_tol = ZERO_TOL, zero_class=class_, max_p_win = max_p_win)
+                                    zero_tol = ZERO_TOL, zero_class=cls, max_p_win = max_p_win)
                 return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nup) \
                                         for nup in nu_prime_arr for beta in beta_arr]))
 
@@ -132,7 +130,7 @@ for class_ in CLASSES:
     def opt_with_gamma(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
         kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                             lambda_ = lambda_, c_lambda = c_lambda,
-                            zero_tol = ZERO_TOL, zero_class=class_, max_p_win = max_p_win)
+                            zero_tol = ZERO_TOL, zero_class=cls, max_p_win = max_p_win)
         gen_rand = np.array([[kr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
                                 for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
         cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
@@ -161,9 +159,9 @@ for class_ in CLASSES:
                                      optGAMMAs[nonzero:N_SLICE]))
         HEADER = 'num_of_rounds\trate\tgamma'
         WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
-        OUTFILE = f'opt_gam-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}.csv'
-        out_path = os.path.join(OUTCSV_DIR, OUTFILE)
-        np.savetxt(out_path, data2save, fmt='%.5g', delimiter=',', header=HEADER)
+        OUTCSV = f'opt_gamma-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}.csv'
+        OUTCSV_PATH = os.path.join(OUTCSV_DIR, OUTCSV)
+        np.savetxt(OUTCSV_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
 
     ### Set x-/y- labels and other plotting stuff
     YLABEL = r'$\displaystyle r$'+' (bit per round)'
@@ -186,7 +184,7 @@ for class_ in CLASSES:
         OUT_NAME = f'{COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}'
         if TAIL:
             OUT_NAME += f'-{TAIL}'
-        out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
-        plt.savefig(out_path, format = FORMAT)
+        OUT_PATH = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
+        plt.savefig(OUT_PATH, format = FORMAT)
     if SHOW:
         plt.show()

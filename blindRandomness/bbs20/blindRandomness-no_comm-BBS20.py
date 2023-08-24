@@ -8,116 +8,39 @@
       even after he finish his first measurement.
 """
 import ncpol2sdpa as ncp
-import mosek
 import numpy as np
 from joblib import Parallel, delayed
 import time
-import sys
+import sys, os
 
-KS_ZEROS = {'3a': [([0,0],[0,0]),([1,1],[0,1]),([1,1],[1,0])],
-            '3b': [([0,0],[0,0]),([1,1],[0,0]),([1,0],[1,1])],
-            '3b_swap': [([0,0],[0,0]),([1,1],[0,0]),([0,1],[1,1])],
-            '2a': [([0,0],[0,0]),([1,1],[0,0])],
-            '2b': [([0,0],[0,0]),([1,1],[1,0])],
-            '2b_swap': [([0,0],[0,0]),([1,1],[0,1])],
-            '2c': [([0,0],[0,0]),([1,0],[1,1])],
-            '2c_swap': [([0,0],[0,0]),([0,1],[1,1])],
-            '1' : [([0,0],[0,0])]}
+### Add current directory to Python path
+sys.path.append('..')
+from common_func.SDP_helper import *
 
-def truncate(number, digit):
-    """
-        Truncate the floating number up to the given digit after point
-        It will ignore any number after the digit
-    """
-    truncated_number = round(number, digit)
-    if round(number, digit+1) < truncated_number:
-        truncated_number -= 10 ** (-digit)
-    return truncated_number
-
-def BellFunction(operator_list, polynomial):
-    """
-        Construct Bell function from given name of operator and its coefficient
-    """
-    Bell_function = 0
-    operator_names = [op.__repr__() for op in operator_list]
-    for monomial, coeff in polynomial.items():
-        if monomial == 'id':
-            Bell_function += coeff
-        else:
-            ops = monomial.split('*')
-            new_term = coeff
-            for op in ops:
-                try:
-                    op_index = operator_names.index(op)
-                except ValueError:
-                    print(f'Operator {op} not in operator_list.')
-                    return
-                new_term *= operator_list[op_index]
-            Bell_function += new_term
-    return Bell_function
-
-def maxBellFunc(scenario, bell_function,
-                zero_positions = [], zero_tol = 0, constraints = {},
-                level = 2, verbose = 1, solver_config = {}, showProb = False):
-    """
-        Maxmize given Bell function in given scenario
-    """
-    P = ncp.Probability(*scenario)
-    all_operators = P.get_all_operators()
-    
-    sdp = ncp.SdpRelaxation(all_operators, verbose = verbose)
-    
-    objective = BellFunction(all_operators, bell_function)
-    substs = P.substitutions
-    
-    constr = {'equalities': [], 'inequalities': [],
-               'momentequalities': [], 'momentinequalities': []}
-
-    if constraints:
-        for key in list(set(constraints.keys()) & set(constr.keys())):
-            polys = constraints[key]
-            for poly in polys:
-                constr[key].append(BellFunction(all_operators, poly))
-
-    if zero_positions:
-        constr['momentinequalities'] += zeroProbConstr(P, zero_positions, zero_tol)
-    
-    sdp.get_relaxation(level = level, objective = -objective,
-                       substitutions = substs,
-                       **constr)
-    sdp.solve(*solver_config)
-
-    if verbose:
-        print(sdp.status, sdp.primal, sdp.dual)
-
-    if showProb:
-        printProb(sdp, P, scenario)
-    
-    return sdp.status, sdp.primal, sdp.dual
-
+CLASS_ZERO_POS = zero_position_map()
 
 # Score (winning probability) constraint of non-local game
-def winProb(P, configs = [[2,2],[4,4,4,4]], meas_prob = [], signaling = True):
+def winProb(P, scenario = [[2,2],[4,4,4,4]], meas_prob = [], signaling = True):
     """
         Function of winning probability of nonlocal game
         Here we use a modified CHSH non-local game for example
         - P : P([a,b],[x,y])=P(ab|xy) is the probability that get the outputs (a,b) for given inputs (x,y)                                               
-        - configs : Tell the number of inputs and number of outputs for each input in each party
+        - scenario : Tell the number of inputs and number of outputs for each input in each party
                     may be useful for general scenario
         - meas_prob : The probability of the inpus P(xy). Set as uniform dist. if not define
     """
     try:
-        config_A = configs[0]
-        num_x = len(config_A)
-        config_B = configs[1]
-        num_y = len(config_B)
+        configA = scenario[0]
+        num_x = len(configA)
+        configB = scenario[1]
+        num_y = len(configB)
     except IndexError:
-        print(f'Wrong input configs: {configs}')
+        print(f'Wrong input scenario: {scenario}')
     win_prob = 0
     for x in range(num_x):
         for y in range(num_y):
-            for a in range(config_A[x]):
-                for b in range(config_B[y]):
+            for a in range(configA[x]):
+                for b in range(configB[y]):
                     # One should modify the following line for different winning condtion
                     b1 = int(b/2)
                     y1 = int(y/2)
@@ -143,17 +66,6 @@ def zeroProbConstr(P, positions, err_tol = 0, on_Pab1xy1 = False):
         else:
             constr += [err_tol-P(*pos)]
     return constr
-
-def probConstr(P, configs=[[2,2],[4,4,4,4]]):
-    try:
-        config_A = configs[0]
-        num_x = len(config_A)
-        config_B = configs[1]
-        num_y = len(config_B)
-    except IndexError:
-        print(f'Wrong input configs: {configs}')
-    return [P([a,b],[x,y]) for x in range(num_x) for y in range(num_y) \
-            for a in range(config_A[x]) for b in range(config_B[y])]
 
 def objective(P, inputs = None, meas_prob = []):
     """
@@ -222,41 +134,28 @@ def printPab1xy1(sdp, P, Prob_y2 = []):
 
                         y = y1*2+y2
                         Pab1xy1 += (sdp[P([a,b1*2],[x,y])] + sdp[P([a,b1*2+1],[x,y])])*prob
-                    row.append(f'{Pab1xy:.8g}')
+                    row.append(f'{Pab1xy1:.8g}')
             print(f'\t'.join(row))
  
 
-def printProb(sdp, P, configs=[[2,2],[4,4,4,4]]):
-    try:
-        config_A = configs[0]
-        num_x = len(config_A)
-        config_B = configs[1]
-        num_y = len(config_B)
-    except IndexError:
-        print(f'Wrong input configs: {configs}')
-    for y in range(num_y):
-        for b in range(config_B[y]):
-            s = f'\t'.join([str(sdp[P([a,b],[x,y])]) for x in range(num_x) for a in range(config_A[x])])
-            print(s)
-
 LEVEL = 2                       # NPA relaxation level
 VERBOSE = 1                     # Relate to how detail of the info will be printed
-NUM_PARALLEL_TASK = 2           # Number of tasks running parallelly
-NUM_CORE_PER_TASK = 4           # Number of cores for each task
+N_WORKER_LOOP = 2           # Number of tasks running parallelly
+N_WORKER_SDP = 4           # Number of cores for each task
 SOLVER_CONFIG = ['mosek', {'dparam.presolve_tol_x': 1e-10,
                            'dparam.intpnt_co_tol_rel_gap': 1e-7,
-                           'iparam.num_threads': NUM_CORE_PER_TASK}]
+                           'iparam.num_threads': N_WORKER_SDP}]
 ACCURATE_DIGIT = 4              # Achievable precision
-ZERO_ERR = 1e-10                # Tolerate error for hardy zeros
+ZERO_TOL = 1e-10                # Tolerate error for hardy zeros
 EPSILON = 1e-5                  # Relax the precise winning prob constraint to a range with epsilon (1e-5)
-SAVE_DATA = True                # Set the data into file
+SAVEDATA = True                # Set the data into file
 TIMMING = False                 # True for timming
-
+OUT_DIR = './data/BBS20'
 
 # Setup of the scenario for Alice and Bob
-A_config = [2,2]
-B_config = [4,4,4,4]
-P = ncp.Probability(A_config, B_config)
+configA = [2,2]
+configB = [4,4,4,4]
+P = ncp.Probability(configA, configB)
 A, B = P.parties
 
 substs = P.substitutions
@@ -323,8 +222,8 @@ if TIMMING:
     tic = time.time()
 
 for zero_class in ZERO_CLASS:
-    zero_pos = KS_ZEROS.get(zero_class, [])
-    zero_constr = zeroProbConstr(P, zero_pos, ZERO_ERR, on_Pab1xy1 = True)
+    zero_pos = CLASS_ZERO_POS.get(zero_class, [])
+    zero_constr = zeroProbConstr(P, zero_pos, ZERO_TOL, on_Pab1xy1 = True)
     
     if VERBOSE:
         if zero_class:
@@ -337,7 +236,7 @@ for zero_class in ZERO_CLASS:
     _, Q_bound, _ = maxBellFunc([[2,2],[2,2]],
                                 {'id': 1/4, 'A0': 1/2, 'B0': 1/2, 'A0*B0': -1/2,
                                  'A0*B1': -1/2, 'A1*B0': -1/2, 'A1*B1': 1/2},
-                                zero_positions = zero_pos, zero_tol = ZERO_ERR, constraints = {},
+                                zero_positions = zero_pos, zero_tol = ZERO_TOL, constraints = {},
                                 level = LEVEL, verbose = VERBOSE-1, solver_config = SOLVER_CONFIG)
 
     P_WIN_Q = truncate(-Q_bound, ACCURATE_DIGIT)
@@ -355,7 +254,7 @@ for zero_class in ZERO_CLASS:
             else:
                 print(f'Chosen input xy={inputs[0]}{inputs[1]}')
 
-        results = Parallel(n_jobs=NUM_PARALLEL_TASK, verbose = 0)(
+        results = Parallel(n_jobs=N_WORKER_LOOP, verbose = 0)(
                     delayed(task)(P, p_win, inputs, substs, seq_constr,
                                   zero_constr = zero_constr) for p_win in P_WINs)
         
@@ -363,12 +262,13 @@ for zero_class in ZERO_CLASS:
             for p_win, p_quess in results:
                 print(f'winning_prob: {p_win:.10g}\tguessing_prob: {p_quess:.10g}')
 
-        if SAVE_DATA:
-            OUT_COMMON = 'local_randomness'
-            NON_LOCAL_RELATION = 'CHSH' if not zero_class else f'class_{zero_class}'
-            INPUT = f'xy_{inputs[0]}{inputs[1]}' if inputs is not None else 'avg_inputs'
-            OUT_FILE = f'{OUT_COMMON}-{NON_LOCAL_RELATION}-{INPUT}-BBS20-no_comm.csv'
-            np.savetxt(OUT_FILE, results, fmt='%.10g', delimiter=',')
+        if SAVEDATA:
+            OUT_COM = 'br'
+            CLS = 'chsh' if not zero_class else f'class_{zero_class}'
+            INP = f'xy_{inputs[0]}{inputs[1]}' if inputs is not None else 'avg_inputs'
+            OUT_FILE = f'{OUT_COM}-{CLS}-{INP}-BBS20-no_comm.csv'
+            OUT_PATH = os.join.path(OUT_DIR, OUT_FILE)
+            np.savetxt(OUT_PATH, results, fmt='%.5g', delimiter=',')
 
 if TIMMING:
     toc = time.time()

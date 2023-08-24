@@ -5,7 +5,7 @@ import os
 
 ### Data paths
 TOP_DIR = './'
-DATA_DIR = os.path.join(TOP_DIR, 'data/mtf')
+DATA_DIR = os.path.join(TOP_DIR, 'data/BFF21/mtf')
 CLASS_INPUT_MAP = {'CHSH': '00', '1': '01', '2a': '11',
                    '2b': '01', '2b_swap': '11', '2c': '10',
                    '3a': '11', '3b': '10'}

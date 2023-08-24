@@ -25,7 +25,7 @@ ZER_TOL = 1e-9
 N_QUAD = 12
 
 ### Directory where data saved
-DATA_DIR = './data/bff21_zero'
+DATA_DIR = './data/BFF21/biased_inp'
 ### Directory to save figures
 OUT_DIR = './figures'
 
@@ -34,9 +34,7 @@ CLASSES = ['2a']
 ### Tolerance error for zero-probability constraints
 #ERRORS = ['1e-05', '1e-04', '1e-03', '1e-02', '1e-01']
 
-CLASS_INPUT_MAP = {'chsh': '00', '1': '01', '2a': '11',
-                   '2b': '01', '2b_swap': '11', '2c': '10',
-                   '3a': '11', '3b': '10'}
+CLASS_INPUT_MAP = cls_inp_map('blind')
 
 ######### Plotting settings #########
 FIG_SIZE = (12, 9)
@@ -61,16 +59,16 @@ QUAD = f'M_{N_QUAD}'
 WTOL = f'wtol_{WIN_TOL:.0e}'
 ZTOL = f'ztol_{ZER_TOL:.0e}'
 
-for class_ in CLASSES:
+for cls in CLASSES:
     plt.figure(figsize=FIG_SIZE, dpi=DPI)
     plt.subplots_adjust(**SUBPLOT_PARAM)
 
-    input_ = CLASS_INPUT_MAP[class_]
-    CLS = class_
+    input_ = CLASS_INPUT_MAP[cls]
+    CLS = cls
     INP = f'xy_{input_}'
     
     GAMMAs = [0.25, 0.4, 0.5, 0.6, 0.7, 0.8]
-    # if class_ == '1' or class_ == '2a':
+    # if cls == '1' or cls == '2a':
     #     GAMMAs += [0.75, 0.8]
     for gamma in GAMMAs:
         GAM = f'gam_{gamma*100:.0f}'

@@ -214,6 +214,66 @@ def singleRoundEntropy(rand_type, P, Z, M, inputs, win_prob_func, win_prob,
         c_lambda = entropy - lambda_ * max_p_win
     return win_prob, entropy, lambda_, c_lambda
 
+def BellFunction(operator_list, polynomial):
+    """
+        Construct Bell function from given name of operator and its coefficient
+    """
+    Bell_function = 0
+    operator_names = [op.__repr__() for op in operator_list]
+    for monomial, coeff in polynomial.items():
+        if monomial == 'id':
+            Bell_function += coeff
+        else:
+            ops = monomial.split('*')
+            new_term = coeff
+            for op in ops:
+                try:
+                    op_index = operator_names.index(op)
+                except ValueError:
+                    print(f'Operator {op} not in operator_list.')
+                    return
+                new_term *= operator_list[op_index]
+            Bell_function += new_term
+    return Bell_function
+
+def maxBellFunc(scenario, bell_function,
+                zero_positions = [], zero_tol = 0, constraints = {},
+                level = 2, verbose = 1, solver_config = {}, showProb = False):
+    """
+        Maxmize given Bell function in given scenario
+    """
+    P = ncp.Probability(*scenario)
+    all_operators = P.get_all_operators()
+    
+    sdp = ncp.SdpRelaxation(all_operators, verbose = verbose)
+    
+    objective = BellFunction(all_operators, bell_function)
+    substs = P.substitutions
+    
+    constr = {'equalities': [], 'inequalities': [],
+               'momentequalities': [], 'momentinequalities': []}
+
+    if constraints:
+        for key in list(set(constraints.keys()) & set(constr.keys())):
+            polys = constraints[key]
+            for poly in polys:
+                constr[key].append(BellFunction(all_operators, poly))
+
+    if zero_positions:
+        constr['momentinequalities'] += zeroConstr(P, zero_positions, zero_tol)
+    
+    sdp.get_relaxation(level = level, objective = -objective,
+                       substitutions = substs, **constr)
+    sdp.solve(*solver_config)
+
+    if verbose:
+        print(sdp.status, sdp.primal, sdp.dual)
+
+    if showProb:
+        printProb(sdp, P, scenario)
+    
+    return sdp.status, sdp.primal, sdp.dual
+
 def truncate(number, digit):
     """
         Truncate the floating number up to the given digit after point

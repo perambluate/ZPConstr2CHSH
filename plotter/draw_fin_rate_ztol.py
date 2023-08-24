@@ -63,7 +63,7 @@ TOP_DIR = top_dir(TYPE)
 DATA_DIR = os.path.join(TOP_DIR, 'data')
 OUTCSV_DIR = os.path.join(DATA_DIR, 'fin_rate')
 if TYPE == 'blind':
-    DATA_DIR = os.path.join(DATA_DIR, 'bff21_zero/w_max_77')
+    DATA_DIR = os.path.join(DATA_DIR, 'BFF21/w_max_77')
 elif TYPE in ['one', 'two']:
     DATA_DIR = os.path.join(DATA_DIR, 'asymp_rate')
 
@@ -239,10 +239,10 @@ for cls in CLASSES:
                     HEADER = 'rounds, rate'
                     WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
                     ZTOL = f'ztol_{zero_tol:.0e}'
-                    # OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
-                    OUTFILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
-                    OUTPATH = os.path.join(OUTCSV_DIR, OUTFILE)
-                    np.savetxt(OUTPATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
+                    # OUTCSV = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
+                    OUTCSV = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
+                    OUTCSV_PATH = os.path.join(OUTCSV_DIR, OUTCSV)
+                    np.savetxt(OUTCSV_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
             
 ##################################### Draw line ##################################### 
             ### Colors for different zero tolerances
