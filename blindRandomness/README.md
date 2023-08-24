@@ -7,19 +7,19 @@ Besides by computing the conditional von Neumann entropy with Brown-Fawzi-Fawzi 
 
 ## Folder structure
 <pre>
-├── bbs20
+├── bbs20/
 |   └── blindRandomness-BBS20.py
-├── bff21
+├── bff21/
 |   └── blindRandomness-BFF21.py
-├── fm18
+├── fm18/
 |   └── blindRandomness-FM18.py
-├── plotting_func
+├── plotting_func/
 │   ├── draw_asym_rate.py
 │   ├── draw_fin_rate.py
 │   ├── draw_heat_map.py
 |   └── draw_min_tradeoff.py
-├── data
-├── figures
+├── data/
+├── figures/
 ├── README.md 
 └── .gitignore
 </pre>
