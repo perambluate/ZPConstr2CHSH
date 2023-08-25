@@ -35,16 +35,15 @@ import os, sys
 import re
 
 ### Add current directory to Python path
-# (Note: this works when running the command in the dir. 'blindRandomness')
 sys.path.append('.')
 from common_func.plotting_helper import *
 
 PRINT_DATA = False  # To print values of data
-SAVE = True         # To save figure or not
-SHOW = False        # To show figure or not
+SAVE = False         # To save figure or not
+SHOW = True        # To show figure or not
 SAVECSV = False     # To save data or not
-DRAW_FROM_SAVED_DATA = True     # Plot the line with previous data if true
-TYPE = 'two'        # Type of randomness (one/two/blind)
+DRAW_FROM_SAVED_DATA = False     # Plot the line with previous data if true
+TYPE = 'blind'        # Type of randomness (one/two/blind)
 
 ### Change the GUI backend to get rid of the multi-threading runtime error with tkinter
 if not SHOW:
@@ -111,7 +110,7 @@ if TYPE == 'blind':
     N_RANGE = (1e7, 1e14)
 else:
     N_RANGE = (1e6, 1e14)
-N_SLICE = 200
+N_SLICE = 100 #200
 Ns = np.geomspace(*N_RANGE, num=N_SLICE)
 
 ### Freely tunable params
@@ -131,7 +130,8 @@ NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
 
 ### All classes to plot
-CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
+# CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
+CLASSES = ['chsh','1','2c', '3b']
 if TYPE == 'two':
     CLASSES.remove('2b_swap')
 ZERO_TOLs = [1e-9]
@@ -183,33 +183,13 @@ for cls in CLASSES:
 
     ##################### Compute key rate with optimal parameters #####################
             ### Construct key rate function with fixed param (only leave n, beta tunable)
-            kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
-                                lambda_ = lambda_, c_lambda = c_lambda,
-                                zero_tol = zero_tol, zero_class=cls, max_p_win = max_p_win)
-            
-            def opt_all(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
-                # return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nu_prime) \
-                #                         for nu_prime in nu_prime_arr for beta in beta_arr]))
-                gen_rand = np.array([[kr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
-                                for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
-                cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
-                net_rand = (gen_rand.T - cost).T
-                return max(np.max(net_rand), 0)
-            
-            def opt_with_gamma(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
-                kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
+            fin_rate_func = partial(fin_rate_testing, asym_rate = asym_rate,
                                     lambda_ = lambda_, c_lambda = c_lambda,
                                     zero_tol = zero_tol, zero_class=cls, max_p_win = max_p_win)
-                gen_rand = np.array([[kr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
-                                        for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
-                cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
-                net_rand = (gen_rand.T - cost).T
-                max_id =  np.argmax(net_rand) + 1
-                max_gamma = gam_arr[math.ceil(max_id / (NU_PRIME_SLICE*BETA_SLICE))-1]
-                opt_fin_rate = net_rand.flatten()[max_id - 1]
-                return max(opt_fin_rate, 0), max_gamma
 
-            fr_gammas = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_with_gamma)(N) for N in Ns)
+            fr_gammas = Parallel(n_jobs=N_JOB, verbose = 0)(
+                        delayed(opt_with_gamma)(N, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs,
+                                                inp_dist = INP_DIST, fin_rate_func = fin_rate_func) for N in Ns)
             fr_gammas = list(zip(*fr_gammas))
             FRs = np.array(fr_gammas[0])
             optGAMMAs = np.array(fr_gammas[1])

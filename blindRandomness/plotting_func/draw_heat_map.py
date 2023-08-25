@@ -131,16 +131,16 @@ for cls in CLASSES:
                 c_lambda -= sum(lambda_zeros)*zero_tol
 
             ### Construct key rate function with fixed param (only leave n, beta tunable)
-            kr_func = partial(fin_rate_testing, gamma = GAMMA, asym_rate = asym_rate,
+            fr_func = partial(fin_rate_testing, gamma = GAMMA, asym_rate = asym_rate,
                                 lambda_ = lambda_, c_lambda = c_lambda,
                                 zero_tol = zero_tol, zero_class = cls, max_p_win = max_p_win)
             
             def opt_nup(n, beta, nu_prime_arr = NU_PRIMEs):
-                return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nu_prime) \
+                return np.max(np.array([fr_func(n = n, beta = beta, nu_prime = nu_prime) \
                                         for nu_prime in nu_prime_arr]))
             
             def opt_beta(n, nu_prime, beta_arr = BETAs):
-                return np.max(np.array([kr_func(n = n, nu_prime = nu_prime, beta = beta) \
+                return np.max(np.array([fr_func(n = n, nu_prime = nu_prime, beta = beta) \
                                         for beta in beta_arr]))           
 
             if SCAN == 'beta' or SCAN == 'nup':

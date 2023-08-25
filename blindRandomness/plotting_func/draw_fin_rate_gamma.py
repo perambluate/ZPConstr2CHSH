@@ -111,11 +111,11 @@ for cls in CLASSES:
 ################################ Compute key rate ################################
         ### Construct key rate function with fixed param (only leave n, beta tunable)
         def opt_all(n, beta_arr = BETAs, nu_prime_arr = NU_PRIMEs):
-                kr_func = partial(fin_rate_testing, gamma = gamma, asym_rate = asym_rate,
-                                    lambda_ = lambda_, c_lambda = c_lambda,
-                                    zero_tol = ZERO_TOL, zero_class=cls, max_p_win = max_p_win)
-                return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nup) \
-                                        for nup in nu_prime_arr for beta in beta_arr]))
+            fr_func = partial(fin_rate_testing, gamma = gamma, asym_rate = asym_rate,
+                                lambda_ = lambda_, c_lambda = c_lambda,
+                                zero_tol = ZERO_TOL, zero_class=cls, max_p_win = max_p_win)
+            return np.max(np.array([fr_func(n = n, beta = beta, nu_prime = nup) \
+                                    for nup in nu_prime_arr for beta in beta_arr]))
 
         FRs = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_all)(N) for N in Ns)
         FRs = np.array(FRs)
@@ -128,10 +128,10 @@ for cls in CLASSES:
         plt.plot(Ns, netFRs, label = label)
 
     def opt_with_gamma(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
-        kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
+        fr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                             lambda_ = lambda_, c_lambda = c_lambda,
                             zero_tol = ZERO_TOL, zero_class=cls, max_p_win = max_p_win)
-        gen_rand = np.array([[kr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
+        gen_rand = np.array([[fr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
                                 for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
         cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
         net_rand = (gen_rand.T - cost).T

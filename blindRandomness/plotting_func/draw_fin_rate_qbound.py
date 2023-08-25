@@ -38,9 +38,9 @@ PRINT_DATA = False
 ### An option to the data into a csv file
 SAVECSV = False
 ### To save file or not
-SAVE = True
+SAVE = False
 ### To show figure or not
-SHOW = False
+SHOW = True
 
 ### Change the GUI backend to get rid of the multi-threading runtime error with tkinter
 if not SHOW:
@@ -90,6 +90,7 @@ INP_DIST = [1/4]*4
 EPS = f'eps_{EPSILON:.0e}'
 WTOL = f'wtol_{WIN_TOL:.0e}'
 # GAM = f'gam_{GAMMA:.0e}'
+QUAD = 'M_12'
 
 ### Num of rounds
 N_RANGE = (1e7, 1e14)
@@ -125,7 +126,6 @@ for cls in CLASSES:
     HEAD = 'br'
     CLS = cls
     INPUT = f'xy_{input_}'
-    QUAD = 'M_12'
     # WTOL = f'wtol_{WIN_TOL:.0e}'
 
     ### Run over all zero tolerances in ZERO_TOLs
@@ -155,20 +155,13 @@ for cls in CLASSES:
 
 ##################### Compute key rate with optimal parameters #####################
         ### Construct key rate function with fixed param (only leave n, beta tunable)
-        kr_func = partial(fin_rate_testing, asym_rate = asym_rate,
+        fr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                             lambda_ = lambda_, c_lambda = c_lambda,
                             zero_tol = zero_tol, zero_class=cls, max_p_win = max_p_win)
         
-        def opt_all(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
-                # return np.max(np.array([kr_func(n = n, beta = beta, nu_prime = nu_prime) \
-                #                         for nu_prime in nu_prime_arr for beta in beta_arr]))
-                gen_rand = np.array([[kr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
-                                for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
-                cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
-                net_rand = (gen_rand.T - cost).T
-                return max(np.max(net_rand), 0)
-
-        FRs = Parallel(n_jobs=N_JOB, verbose = 0)(delayed(opt_all)(N) for N in Ns)
+        FRs = Parallel(n_jobs=N_JOB, verbose = 0)(
+          delayed(opt_all)(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs,
+                           inp_dist = INP_DIST, fin_rate_func = fr_func) for n in Ns)
         FRs = np.array(FRs)
         
 ##################################### Draw line ##################################### 
