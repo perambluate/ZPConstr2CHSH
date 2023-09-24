@@ -3,7 +3,7 @@ import math
 import sys
 
 ### Constant parameters
-CHSH_W_Q = (2 + math.sqrt(2) )/4    # CHSH win prob
+W_Q = (2 + math.sqrt(2) )/4    # CHSH win prob
 EPSILON = 1e-12                     # Smoothness of smooth min entropy (related to secrecy)
 WIN_TOL = 1e-4                      # Tolerant error for win prob
 DIGIT = 9                           # Accurate digit for the computation
@@ -14,22 +14,23 @@ ALL_NSB_CLASSES = ['1', '2a', '2b', '2b_swap', '2c', '3a', '3b']
 ### Finite extractable rate for blind randomness extraction with testing
 def fin_rate_testing(n, beta, nu_prime, gamma, asym_rate, lambda_, c_lambda,
                         epsilon = EPSILON, win_tol = WIN_TOL, zero_tol = 0,
-                        zero_class = '', max_p_win = CHSH_W_Q):
+                        zero_class = '', max_win = W_Q, min_win = 1-W_Q):
     
     ln2 = math.log(2)
     gamma_0 = (1-gamma)/gamma
     nu_0 = 1/(2*gamma) - gamma_0*nu_prime
     
-    D = c_lambda**2 + (lambda_/(2*gamma))**2 - \
-        gamma_0/gamma * lambda_**2 * (1-nu_prime)*nu_prime
-    if nu_0 > max_p_win:
-        var_f = D - (lambda_*(max_p_win - nu_prime))**2
-    elif nu_0 < (1 - max_p_win):
-        var_f = D - (lambda_*(1 - max_p_win - nu_prime))**2
+    # D = c_lambda**2 + (lambda_/(2*gamma))**2 - \
+    #     gamma_0/gamma * lambda_**2 * (1-nu_prime)*nu_prime
+    D = (lambda_/(2*gamma))**2 - gamma_0/gamma * lambda_**2 * (1-nu_prime)*nu_prime
+    if nu_0 > max_win:
+        var_f = D - (lambda_*(max_win - nu_prime))**2
+    elif nu_0 < min_win:
+        var_f = D - (lambda_*(min_win - nu_prime))**2
     else:
         var_f = D
 
-    max2min_f = lambda_*(gamma_0 * (1-nu_prime) + max_p_win)
+    max2min_f = lambda_*(gamma_0 * (1-nu_prime) - min_win +1)
     if math.sqrt(1 - epsilon**2) == 1:
         epsi_term = math.log2(1/2*epsilon**2)
     else:
@@ -54,9 +55,12 @@ def fin_rate_testing(n, beta, nu_prime, gamma, asym_rate, lambda_, c_lambda,
                       * (math.log(lamb_term + math.e**2)) **3
 
         except FloatingPointError:
-            K_beta = 1/(6*ln2) * (beta**2)/((1-beta)**3) \
-                      * (2 ** (beta * (2 + max2min_f) ) ) \
-                      * ( (2 + max2min_f)/math.log2(math.e) ) **3
+            try:
+                K_beta = 1/(6*ln2) * (beta**2)/((1-beta)**3) \
+                        * (2 ** (beta * (2 + max2min_f) ) ) \
+                        * ( (2 + max2min_f)/math.log2(math.e) ) **3
+            except FloatingPointError:
+                return 0
 
     fin_rate =  asym_rate \
                 - ln2/2 * beta * (math.log2(9) + math.sqrt(2 + var_f)) ** 2 \
