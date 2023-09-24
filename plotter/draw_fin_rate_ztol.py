@@ -51,7 +51,7 @@ SAVE = True        # To save figure or not
 SHOW = False        # To show figure or not
 SAVECSV = False      # To save data or not
 DRAW_FROM_SAVED_DATA = True    # Plot the line with previous data if true
-TYPE = 'two'        # Type of randomness (one/two/blind)
+TYPE = 'one'        # Type of randomness (one/two/blind)
 
 ### Change the GUI backend to get rid of the multi-threading runtime error with tkinter
 if not SHOW:
@@ -67,13 +67,13 @@ elif TYPE in ['one', 'two']:
     DATA_DIR = os.path.join(DATA_DIR, 'asymp_rate')
 
 CLASS_INPUT_MAP = cls_inp_map(TYPE)
-CLASS_MAX_WIN = cls_max_win_map()
+# CLASS_MAX_WIN = cls_max_win_map()
 
 ### Parallel settings
 N_JOB = 8
 
 ### Constant parameters
-CHSH_W_Q = (2 + math.sqrt(2))/4    # CHSH win prob
+# CHSH_W_Q = (2 + math.sqrt(2))/4    # CHSH win prob
 EPSILON = 1e-12                     # Smoothness of smooth min entropy (related to secrecy)
 WIN_TOL = 1e-4                      # Tolerant error for win prob
 # GAMMA = 1e-2                        # Testing ratio
@@ -82,24 +82,25 @@ INP_DIST = [1/4]*4
 ### General File Name Settings
 OUT_DIR = os.path.join(TOP_DIR, 'figures/')
 if TYPE == 'blind':
-    HEAD = ''
+    HEAD = 'br'
 elif TYPE =='one' or TYPE == 'two':
     HEAD = 'max_w77'
 EPS = f'eps_{EPSILON:.0e}'
 WTOL = f'wtol_{WIN_TOL:.0e}'
+QUAD = 'M_12'
 # GAM = f'gam_{GAMMA:.0e}'
 CSVHEAD = ''
 
 ######### Plotting settings #########
-FIG_SIZE = (16, 9)      # for aspect ratio 16:9
-# FIG_SIZE = (12, 9)    # for aspect ratio 4:3
+# FIG_SIZE = (16, 9)      # for aspect ratio 16:9
+FIG_SIZE = (12, 9)    # for aspect ratio 4:3
 DPI = 200
-SUBPLOT_PARAM = {'left': 0.085, 'right': 0.98,'bottom': 0.1, 'top': 0.905, 'wspace': 0.28}
+SUBPLOT_PARAM = {'left': 0.1, 'right': 0.98,'bottom': 0.1, 'top': 0.905, 'wspace': 0.28}
 
 ### Set font sizes and line width
 titlesize = 36
-ticksize = 34
-legendsize = 32
+ticksize = 32
+legendsize = 30
 linewidth = 3
 
 ### Set matplotlib plotting params
@@ -112,7 +113,11 @@ plt.rcParams.update(mplParams)
 N_RANGE = (1e6, 1e14)
 if TYPE == 'two':
     N_RANGE = (5e5, 1e14)
-N_SLICE = 100
+elif TYPE == 'one':
+    N_RANGE = (1e6, 1e14)
+elif TYPE == 'blind':
+    N_RANGE = (1e7, 1e15)
+N_SLICE = 150
 # N_POINT = f'N_{N_RANGE[0]}'
 N_POINT = re.sub('e\+0+|e\+', 'e', f'N_{N_RANGE[0]:.0e}_{N_RANGE[1]:.0e}_{N_SLICE}')
 Ns = np.geomspace(*N_RANGE, num=N_SLICE)
@@ -131,7 +136,7 @@ NU_PRIME_SLICE = 50
 NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 
 ### All classes to plot
-CLASSES = ['chsh']
+CLASSES = ['chsh', '3b']
 # CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
 # if TYPE == 'two':
 #     CLASSES.remove('2b_swap')
@@ -141,11 +146,15 @@ ZERO_PROB = 1e-9
 #### Colors for different winning probabilities
 COLORS = ('darkcyan','darkred')
 
+fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
+
+MAX_R = 0
+
 ################################ Iter for different parameters ################################
 ### Run over all classes in CLASSES
 for cls in CLASSES:
     #### Two subplots for max win and 0.77
-    fig, axs = plt.subplots(1, 2, figsize=FIG_SIZE, dpi=DPI)
+    # fig, axs = plt.subplots(1, 2, figsize=FIG_SIZE, dpi=DPI)
 
     #### Line styles for different zero tolerances
     LINES = itertools.cycle(('solid', 'dashed', 'dashdot', 'dotted'))
@@ -157,12 +166,11 @@ for cls in CLASSES:
         INP = f'x_{inp}'
     else:
         INP = f'xy_{inp}'
-    QUAD = 'M_12'
 
     if cls == 'chsh':
         ZERO_TOLs = [ZERO_PROB]
     else:
-        ZERO_TOLs = [1e-9, 1e-5, 1e-3]
+        ZERO_TOLs = [1e-9, 1e-3] #[1e-9, 1e-5, 1e-3]
 
     ### Run over all zero tolerances in ZERO_TOLs
     for zero_tol in ZERO_TOLs:
@@ -172,7 +180,7 @@ for cls in CLASSES:
 
         ### Get the maximum winnin probability
         with open(MTF_DATA_PATH) as file:
-            max_p_win = float(file.readlines()[1])
+            max_win = float(file.readlines()[1])
 
         ### Load data
         data_mtf = np.genfromtxt(MTF_DATA_PATH, delimiter=",", skip_header = 3)
@@ -180,7 +188,7 @@ for cls in CLASSES:
         
         line = next(LINES)
         ### Colors for different winning probabilities
-        color_iter = itertools.cycle(COLORS)
+        # color_iter = itertools.cycle(COLORS)
 
         titles = []
 
@@ -190,7 +198,7 @@ for cls in CLASSES:
         data_len = data_mtf.shape[0]
 
         #### For different w_exp (or other parameters) in the data
-        for i in range(data_len):
+        for i in range(1):
             FILENOTFOUD = False
             if DRAW_FROM_SAVED_DATA:
                 win_prob = data_mtf[i][0]
@@ -216,7 +224,8 @@ for cls in CLASSES:
                 ### Construct key rate function with fixed param (only leave n, beta tunable)
                 fr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                                         lambda_ = lambda_, c_lambda = c_lambda,
-                                        zero_tol = zero_tol, zero_class=cls, max_p_win = max_p_win)
+                                        zero_tol = zero_tol, zero_class=cls,
+                                        max_win = max_win, min_win = 1 - max_win)
 
                 FRs = Parallel(n_jobs=N_JOB, verbose = 0)(
                       delayed(opt_all)(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs,
@@ -238,45 +247,68 @@ for cls in CLASSES:
             
 ##################################### Draw line ##################################### 
             ### Colors for different zero tolerances
-            color = next(color_iter)
+            # color = next(color_iter)
+            if cls == 'chsh':
+                color = 'darkcyan'
+                label = CLS
+            else:
+                color = 'darkred'
+                label = CLS+r' $\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
             
             ### Set labels of legends
-            label = r'$\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
+            # label = CLS+r' $\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
 
 ################################ Plotting lines ################################
-            axs[i].plot(Ns, FRs, linestyle = line, color = color, label = label)
-            titles.append(r'$\displaystyle w_{exp}$'+f'={win_prob:.4g}')
+            # axs[i].plot(Ns, FRs, linestyle = line, color = color, label = label)
+            plt.plot(Ns, FRs, linestyle = line, color = color, label = label)
+            # titles.append(r'$\displaystyle w_{exp}$'+f'={win_prob:.4g}')
+            MAX_R = max(MAX_R, np.max(FRs))
 
 ################################ Save figure ################################
-    YLABEL = r'$\displaystyle r$'+' (bit per round)'
-    XLABEL = r'$\displaystyle n$'+' (number of rounds)'
-    ### For two subplots
-    axs[0].label_outer()
-    axs[0].set_ylabel(ylabel=YLABEL)
+YLABEL = r'$\displaystyle r$'+' (bit per round)'
+XLABEL = r'$\displaystyle n$'+' (number of rounds)'
+### For two subplots
+# axs[0].label_outer()
+# axs[0].set_ylabel(ylabel=YLABEL)
 
-    for i in range(len(axs)):
-        axs[i].set_xlabel(xlabel=XLABEL)
-        axs[i].set_xscale("log")
-        axs[i].set_title(titles[i], y=1, pad=20)
-        axs[i].yaxis.set_major_formatter(MyScalarFormatter(useMathText=True))
-        axs[i].yaxis.major.formatter.set_powerlimits((-1,2))
-        axs[i].xaxis.set_major_locator(LogLocator(numticks=8))
-        if cls != 'chsh':
-            axs[i].legend(loc='lower right')
-    
-    ### Apply the graphic settings
-    plt.subplots_adjust(**SUBPLOT_PARAM)
-    fig.tight_layout(pad=1)
+# for i in range(len(axs)):
+#     axs[i].set_xlabel(xlabel=XLABEL)
+#     axs[i].set_xscale("log")
+#     axs[i].set_title(titles[i], y=1, pad=20)
+#     axs[i].yaxis.set_major_formatter(MyScalarFormatter(useMathText=True))
+#     axs[i].yaxis.major.formatter.set_powerlimits((-1,2))
+#     axs[i].xaxis.set_major_locator(LogLocator(numticks=8))
+#     if cls != 'chsh':
+#         axs[i].legend(loc='lower right')
 
-    if SAVE:
-        COM = f'fin-w_max_77'
-        TAIL = '0'
-        FORMAT = 'png'
-        # OUT_NAME = f'{COM}-{CLS}-{INP}-{EPS}-{WTOL}-{GAM}-{QUAD}'
-        OUT_NAME = f'{COM}-{CLS}-{INP}-{EPS}-{WTOL}-{QUAD}'
-        if TAIL:
-            OUT_NAME += f'-{TAIL}'
-        out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
-        plt.savefig(out_path, format = FORMAT)
-    if SHOW:
-        plt.show()
+if round(MAX_R, 2) < round(MAX_R, 1):
+    MAX_R = round(MAX_R, 1)
+else:
+    MAX_R = round(MAX_R, 1) + 0.1
+
+plt.yticks(np.linspace(0, MAX_R, 5, endpoint=True))
+plt.ylabel(ylabel=YLABEL)
+plt.xlabel(xlabel=XLABEL)
+plt.xscale("log")
+ax = plt.gca()
+# ax.yaxis.set_major_formatter(MyScalarFormatter(useMathText=True))
+# ax.yaxis.major.formatter.set_powerlimits((-1,2))
+ax.xaxis.set_major_locator(LogLocator(numticks=8))
+ax.legend(loc='lower right')
+
+### Apply the graphic settings
+plt.subplots_adjust(**SUBPLOT_PARAM)
+fig.tight_layout(pad=1)
+
+if SAVE:
+    COM = f'fin-{TYPE}-chsh_{CLASSES[1]}-qbound'
+    TAIL = ''
+    FORMAT = 'png'
+    # OUT_NAME = f'{COM}-{CLS}-{INP}-{EPS}-{WTOL}-{QUAD}'
+    OUT_NAME = f'{COM}-{INP}-{EPS}-{WTOL}-{QUAD}'
+    if TAIL:
+        OUT_NAME += f'-{TAIL}'
+    out_path = os.path.join(OUT_DIR, f'{OUT_NAME}.{FORMAT}')
+    plt.savefig(out_path, format = FORMAT)
+if SHOW:
+    plt.show()

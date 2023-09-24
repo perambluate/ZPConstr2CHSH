@@ -9,10 +9,10 @@ sys.path.append('..')
 from common_func.plotting_helper import *
 
 TOP = './'
-DATA_DIR = os.path.join(TOP,'data')
+DATA_DIR = os.path.join(TOP,'data/asymp_rate')
 X_NORMALIZED = False
 ZERO_CLASS = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
-DATA_COM = 'opr_bff21'
+DATA_COM = 'opr'
 
 OUT_DIR = './figures'
 SORT = False
@@ -21,8 +21,8 @@ SAVE = True     # To save file or not
 SHOW = False    # To show figure or not
 
 ### Figure related
-titlesize = 30
-ticksize = 28
+titlesize = 32
+ticksize = 30
 legendsize = 28
 linewidth = 3
 
@@ -32,7 +32,7 @@ plt.rcParams.update(mplParams)
 
 FIG_SIZE = (12, 9)
 DPI = 100
-SUBPLOT_PARAM = {'left': 0.1, 'right': 0.95, 'bottom': 0.095, 'top': 0.95}
+SUBPLOT_PARAM = {'left': 0.11, 'right': 0.95, 'bottom': 0.105, 'top': 0.95}
 
 def sort_data(data):
     order = np.argsort(data[0])
@@ -56,19 +56,14 @@ for cls in ZERO_CLASS:
         if SORT:
             data = sort_data(data)
         data_list.append(data)
-    
-    ### Average
-    #data = np.average(data_list, axis=0)
-    #label = f'{class_name}'
-    
+        
     ### Maximize
     max_input = np.argmax(np.array(data_list)[:,1][:,0])
     data = data_list[max_input]
-    class_name = f'class\ {cls}' if cls != 'chsh' else 'CHSH'
-    class_name = class_name.replace("_swap", "\\textsubscript{swap}")
-    label = r'{} $\displaystyle x^*={}$'.format(class_name, max_input)
+    class_name = cls.replace("_swap", "\\textsubscript{swap}")
+    # label = r'{} $\displaystyle x^*={}$'.format(class_name, max_input)
+    label = r'{}'.format(class_name)
     
-    #label = f'x={i}'
     color='gray'
     if '1' in cls:
         color = 'blue'
@@ -88,13 +83,14 @@ for cls in ZERO_CLASS:
     
     plt.plot(*data, label = label, color=color, linestyle=line, marker=marker)
 
-lgd = plt.legend(bbox_to_anchor=(1.02, 1))
-X_TITLE = r'$\displaystyle w_{exp}$'+' (winning probability)'
+# lgd = plt.legend(bbox_to_anchor=(1.02, 1))
+plt.legend(loc='best')
+X_TITLE = r'$\displaystyle w_{exp}$' #+' (winning probability)'
 if X_NORMALIZED:
     X_TITLE += ' (normalized with quantum bound)'
 plt.xlabel(X_TITLE)
 plt.ylabel(r"$\displaystyle H(A|XYE')$")
-OUT_COM = 'spr-asymp'
+OUT_COM = 'single-asymp'
 TAIL = 'test'
 FORMAT = 'png'
 OUT_NAME = f'{OUT_COM}-all_cls'
@@ -102,7 +98,8 @@ if TAIL:
     OUT_NAME = f'{OUT_NAME}-{TAIL}'
 OUT_FILE = f'{OUT_NAME}.{FORMAT}'
 OUT_PATH = os.path.join(OUT_DIR, OUT_FILE)
-SAVE_ARGS = {"bbox_extra_artists": (lgd,), "bbox_inches": 'tight'}
+# SAVE_ARGS = {"bbox_extra_artists": (lgd,), "bbox_inches": 'tight'}
+SAVE_ARGS = {}
 
 if SAVE:
     plt.savefig(OUT_PATH, **SAVE_ARGS)

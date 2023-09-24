@@ -39,11 +39,11 @@ sys.path.append('.')
 from common_func.plotting_helper import *
 
 PRINT_DATA = False  # To print values of data
-SAVE = False         # To save figure or not
+SAVE = True         # To save figure or not
 SHOW = True        # To show figure or not
-SAVECSV = False     # To save data or not
+SAVECSV = True     # To save data or not
 DRAW_FROM_SAVED_DATA = False     # Plot the line with previous data if true
-TYPE = 'blind'        # Type of randomness (one/two/blind)
+TYPE = 'one'        # Type of randomness (one/two/blind)
 
 ### Change the GUI backend to get rid of the multi-threading runtime error with tkinter
 if not SHOW:
@@ -54,6 +54,7 @@ TOP_DIR = top_dir(TYPE)
 DATA_DIR = os.path.join(TOP_DIR, 'data')
 OUTCSV_DIR = os.path.join(DATA_DIR, 'fin_rate')
 if TYPE == 'blind':
+    OUTCSV_DIR = os.path.join(DATA_DIR, 'BFF21/fin_rate')
     DATA_DIR = os.path.join(DATA_DIR, 'BFF21/w_max_77')
 elif TYPE in ['one', 'two']:
     DATA_DIR = os.path.join(DATA_DIR, 'asymp_rate')
@@ -130,8 +131,8 @@ NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
 
 ### All classes to plot
-# CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
-CLASSES = ['chsh','1','2c', '3b']
+CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
+# CLASSES = ['chsh','1','2c', '3b']
 if TYPE == 'two':
     CLASSES.remove('2b_swap')
 ZERO_TOLs = [1e-9]
@@ -203,7 +204,7 @@ for cls in CLASSES:
                 WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
                 ZTOL = f'ztol_{zero_tol:.0e}'
                 N_POINT = f'N_{N_SLICE}'
-                OUTCSV = f'{CSV_COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
+                OUTCSV = f'{CSV_COM}-{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}-corrected_mtf.csv'
                 OUTCSV_PATH = os.path.join(OUTCSV_DIR, OUTCSV)
                 np.savetxt(OUTCSV_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
 
@@ -251,7 +252,7 @@ plt.subplots_adjust(**SUBPLOT_PARAM)
 ### Save file
 if SAVE:
     COM = f'fin_{HEAD}-inp_consump-qbound'
-    TAIL = 'test'
+    TAIL = 'corrected_mtf'
     FORMAT = 'png'
     # OUT_NAME = f'{COM}-{EPS}-{WTOL}-{GAM}-{QUAD}'
     OUT_NAME = f'{COM}-{EPS}-{WTOL}-{QUAD}'

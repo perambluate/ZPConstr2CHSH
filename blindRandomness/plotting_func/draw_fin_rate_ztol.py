@@ -46,9 +46,9 @@ PRINT_DATA = False
 ### An option to the data into a csv file
 SAVECSV = False
 ### To save file or not
-SAVE = False
+SAVE = True
 ### To show figure or not
-SHOW = True
+SHOW = False
 
 ### Change the GUI backend to get rid of the multi-threading runtime error with tkinter
 if not SHOW:
@@ -112,8 +112,7 @@ GAMMAs = 1/np.geomspace(10, 10000, num=GAMMA_SLICE)
 NU_PRIME_SLICE = 50
 NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 
-# CLASSES = ['1','2a','2b','2b_swap','2c','3a','3b']
-CLASSES = ['3b']
+CLASSES = ['1','2a','2b','2b_swap','2c','3a','3b']
 ZERO_TOLs = [1e-9, 1e-5, 1e-3]
 
 #### Colors for different winning probabilities
@@ -174,13 +173,6 @@ for cls in CLASSES:
             fr_func = partial(fin_rate_testing, asym_rate = asym_rate,
                               lambda_ = lambda_, c_lambda = c_lambda,
                               zero_tol = zero_tol, zero_class=cls, max_p_win = max_p_win)
-            
-            # def opt_all(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs):
-            #     gen_rand = np.array([[fr_func(n = n, beta = beta, nu_prime = nup, gamma = gamma) \
-            #                     for nup in nup_arr for beta in beta_arr] for gamma in gam_arr])
-            #     cost = np.array([inp_rand_consumption(gamma, INP_DIST) for gamma in gam_arr])
-            #     net_rand = (gen_rand.T - cost).T
-            #     return max(np.max(net_rand), 0)
 
             FRs = Parallel(n_jobs=N_JOB, verbose = 0)(
                   delayed(opt_all)(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs,
@@ -234,8 +226,8 @@ for cls in CLASSES:
     fig.tight_layout(pad=1)
 
     if SAVE:
-        COM = 'fin_blind-inp_consump-w_max_77'
-        TAIL = 'test'
+        COM = 'fin_br-inp_consump-w_max_77'
+        TAIL = 'corrected_mtf'
         FORMAT = 'png'
         # OUT_NAME = f'{COM}-{CLS}-{INPUT}-{EPS}-{WTOL}-{GAM}-{QUAD}'
         OUT_NAME = f'{COM}-{CLS}-{INPUT}-{EPS}-{WTOL}-{QUAD}'

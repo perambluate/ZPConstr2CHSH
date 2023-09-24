@@ -39,7 +39,7 @@ PRINT_DATA = False
 ### An option to the data into a csv file
 SAVECSV = False
 ### To save file or not
-SAVE = False
+SAVE = True
 ### To show figure or not
 SHOW = True
 
@@ -229,8 +229,8 @@ plt.subplots_adjust(**SUBPLOT_PARAM)
 
 ### Save file
 if SAVE:
-    COM = 'fin_blind-inp_consump-w_7525'
-    TAIL = 'test'
+    COM = 'fin_br-inp_consump-w_7525'
+    TAIL = 'corrected_mtf'
     FORMAT = 'png'
     # OUT_NAME = f'{COM}-{EPS}-{WTOL}-{GAM}-{QUAD}'
     OUT_NAME = f'{COM}-{EPS}-{WTOL}-{QUAD}'

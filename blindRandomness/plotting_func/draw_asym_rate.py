@@ -55,10 +55,8 @@ OUT_DIR = './figures'
 SCENARIO = ['BFF21']
 ### Class: 1, 2a, 2b, 2b_swap, 2c, 3a, 3b (standard CHSH is added automatically)
 if ALL_CLS:
-    CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
-    #CLASSES = ['1','2a','2b','2c','3a','3b']
+    CLASSES = ['chsh','1','2a','2b_swap','2c','3a','3b']
 else:
-    # CLASSES = ['1','2c','3b']
     CLASSES = ['chsh','1','3b']
 
 ### Tolerance error for zero-probability constraints
@@ -73,7 +71,7 @@ DPI = 200
 if SMALL:
     SUBPLOT_PARAM = {'left': 0.15, 'right': 0.95, 'bottom': 0.18, 'top': 0.95}
 else:
-    SUBPLOT_PARAM = {'left': 0.1, 'right': 0.95, 'bottom': 0.095, 'top': 0.95}
+    SUBPLOT_PARAM = {'left': 0.11, 'right': 0.95, 'bottom': 0.105, 'top': 0.95}
 
 ### Default font size
 if SMALL:
@@ -82,8 +80,8 @@ if SMALL:
     legendsize = ticksize
     linewidth = 1
 else:
-    titlesize = 30
-    ticksize = 28
+    titlesize = 32
+    ticksize = 30
     legendsize = 28
     linewidth = 3
 
@@ -159,10 +157,11 @@ for scenario in SCENARIO:
             elif OPT == 'max_in':
                 max_input = np.argmax(np.array(data_list)[:,1][:,0])
                 data = data_list[max_input]
-                cls_name = f'class\ {cls}' if cls != 'chsh' else 'CHSH'
-                # cls_name = cls_name.replace("swap", "{swap}")
-                cls_name = cls_name.replace("_swap", "\\textsubscript{swap}")
-                label = r'{} $\displaystyle x^*y^*={:0>2b}$'.format(cls_name, max_input)
+                cls_name = cls.replace("_swap", "\\textsubscript{swap}")
+                # label = r'{} $\displaystyle x^*y^*={:0>2b}$'.format(cls_name, max_input)
+                label = r'{}'.format(cls_name)
+                if cls == '2a':
+                    label += ' (2b)'
 
             ### Minimize
             elif OPT == 'min_in':
@@ -185,42 +184,40 @@ for scenario in SCENARIO:
                     line = 'dotted'
             elif re.match("[2-3]c", cls):
                 line = 'dashdot'
-
-        marker = ''
-        if cls == '2b':
-            marker = '+'
         
-        plt.plot(*data, label = label, color=color, linestyle=line, marker=marker, markersize=12)
+        plt.plot(*data, label = label, color=color, linestyle=line, markersize=12)
 
     if SMALL:
         plt.locator_params(axis='y', nbins=5)
         plt.locator_params(axis='x', nbins=3)
     else:
         #lgd = plt.legend(ncol=2, bbox_to_anchor=(0.9, 1.2))
-        lgd = plt.legend(bbox_to_anchor=(1, 1))
-        # plt.legend(loc='best')
+        # lgd = plt.legend(bbox_to_anchor=(1, 1))
+        plt.legend(loc='upper left')
     
     if SMALL:
         plt.xlabel(r'$\displaystyle w_{exp}$', labelpad = 0)
     else:
-        X_TITLE = r'$\displaystyle w_{exp}$'+' (winning probability)'
+        X_TITLE = r'$\displaystyle w_{exp}$' #+' (winning probability)'
         if X_NORMALIZED:
             X_TITLE += ' (normalized with quantum bound)'
         plt.xlabel(X_TITLE, labelpad = 0)
         plt.ylabel(r"$\displaystyle H(A|BXYE')$")
+        plt.yticks(np.arange(0, 1.2, 0.2))
 
     if not SMALL:
-        SAVE_ARGS = {"bbox_extra_artists": (lgd,), "bbox_inches": 'tight'}
+        # SAVE_ARGS = {"bbox_extra_artists": (lgd,), "bbox_inches": 'tight'}
+        SAVE_ARGS = {}
     else:
         SAVE_ARGS = {"transparent": True}
 
     if SAVE:
-        COM = 'br-asymp'
+        COM = 'blind-asymp'
         if ALL_CLS:
             COM += '-all_cls'
         else:
             COM += f'-{len(CLASSES)}cls'
-        TAIL = 'test'
+        TAIL = '0'
         FORMAT = 'png'
         OUT_NAME = f'{COM}-{OPT}-{scenario}'
         if TAIL:
