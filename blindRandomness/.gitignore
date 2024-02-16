@@ -6,4 +6,5 @@ figure/
 test*
 old_files/
 log*
+*.log
 \.*

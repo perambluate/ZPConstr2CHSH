@@ -53,7 +53,8 @@ fi
 echo "python ${DIR}/${FILE}"
 
 # Save log file as backup or for debugging
-LOG=log_$(date +%H%M-%d%m%y)
+FN=${FILE##*/}
+LOG=log_${FN%\.py}-$(date +%H%M_%d%m%y).txt
 
 # Run in background
 cd $DIR && \
