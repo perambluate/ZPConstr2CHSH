@@ -16,28 +16,26 @@ import time
 import sys, os
 
 ### Add current directory to Python path
-sys.path.append('.')
+sys.path.append('..')
 from common_func.SDP_helper import *
 
-SAVEDATA = True                # Set the data into file
+SAVEDATA = True                 # Set the data into file
 TIMMING = True                  # True for timming
 OUT_DIR = './'        # Folder for the data to save
 RTYPE = 'two'
 LEVEL = 2                       # NPA relaxation level
-M = 6                           # Num of terms in Gauss-Radau quadrature = 2*M
-VERBOSE = 1                     # Relate to how detail of the info will be printed
+M = 9                           # Number of terms in Gauss-Radau quadrature = 2*M
+VERBOSE = 2                     # Relate to how detail of the info will be printed
 N_WORKER_QUAD = 4               # Number of workers for parallelly computing quadrature
-N_WORKER_LOOP = 1               # Number of workers for the outer loop
-N_WORKER_SDP = 2                # Number of threads for solving a single SDP
-PRIMAL_DUAL_GAP = 1e-5          # Allowable gap between primal and dual
-SOLVER_CONFIG = ['mosek', {'dparam.presolve_tol_x': 1e-10,
+N_WORKER_SDP = 4                # Number of threads for solving a single SDP
+PRIMAL_DUAL_GAP = 1e-6          # Allowable gap between primal and dual
+SOLVER_CONFIG = ['mosek', {#'dparam.presolve_tol_x': 1e-10,
                            'dparam.intpnt_co_tol_rel_gap': PRIMAL_DUAL_GAP,
                            'iparam.num_threads': N_WORKER_SDP,
                            'iparam.infeas_report_level': 4}]
 # SOLVER_CONFIG = ['sdpa']
-ACCURATE_DIGIT = 4              # Achievable precision of the solver
-WIN_TOL = 1e-4                  # Relax the precise winning prob constraint to a range with epsilon
-ZERO_PROB = 1e-9                # Treat this value as zero for zero probability constraints
+ACCURATE_DIGIT = 5              # Achievable precision of the solver
+WIN_TOL = 1e-4                  # Relax the precise winning prob constraint to a range with epsilon 2e-5
 
 ## Printing precision of numpy arrays
 np.set_printoptions(precision=5)
@@ -89,9 +87,11 @@ CHSH = [[1, 0, 0, 1], # x0, y0
         [0, 1, 1, 0]] # x1, y1
 
 if VERBOSE:
+    print(f'Rand type: {RTYPE}')
     if SOLVER_CONFIG[0] == 'mosek':
         print(f'MOSEK primal-dual tol gap: {PRIMAL_DUAL_GAP}')
-    # print(f'Zero probability tol err: {ZERO_ERR}')
+    print(f'Accurate digit: {ACCURATE_DIGIT}')
+    print(f'Number of terms summed in quadrature: {M*2}')
     print(f'WinProb deviation: {WIN_TOL}')
 
 # Setup of the scenario for Alice and Bob
@@ -123,7 +123,11 @@ extra_monos = []
 for a in ncp.flatten(A):
     for b in ncp.flatten(B):
         for z in Z:
-            extra_monos += [a*b*z, a*b*Dagger(z), a*b*z*Dagger(z), a*b*Dagger(z)*z]
+            extra_monos += [a*b*z, a*b*Dagger(z)]
+            if RTYPE == 'one':
+                extra_monos += [a*Dagger(z)*z, a*z*Dagger(z)]
+            else:
+                extra_monos += [a*b*z*Dagger(z), a*b*Dagger(z)*z]
 
 w_CHSH = 0
 for x in range(2):
@@ -138,16 +142,14 @@ if TIMMING:
     tic = time.time()
 
     DELTAs = [pi/6] #[pi/6, pi/8, pi/10, pi/50, pi/100, pi/1e3, pi/1e4, pi/1e5, pi/1e6]
-    N_SLICE = len(DELTAs)
-    SCOREs = np.zeros(N_SLICE)
-    # QUBs = np.zeros(N_SLICE)
-    # QLBs = np.zeros(N_SLICE)
-    ENTROPYs = np.zeros(N_SLICE)
-    LAMBDAs = np.zeros(N_SLICE)
-    C_LAMBDAs = np.zeros(N_SLICE)
+    N_POINT = len(DELTAs)
+    Q_BOUNDs = np.zeros(N_POINT)
+    SCOREs = np.zeros(N_POINT)
+    ENTROPYs = np.zeros(N_POINT)
+    LAMBDAs = np.zeros(N_POINT)
+    C_LAMBDAs = np.zeros(N_POINT)
 
-    # delta = math.pi/6
-    for i in range(N_SLICE):
+    for i in range(N_POINT):
         delta = DELTAs[i]
         bell_func = partial(delta_bell_func, delta = delta)
 
@@ -158,9 +160,7 @@ if TIMMING:
         # Compute the quantum bound first
         sdp_Q = ncp.SdpRelaxation(P.get_all_operators(), verbose=max(VERBOSE-3, 0))
         sdp_Q.get_relaxation(level=LEVEL, objective=-bell_func(P),
-                            substitutions = P.substitutions,
-                            momentequalities = [w_CHSH-0.77],
-                            momentinequalities = [])
+                             substitutions = P.substitutions)
         sdp_Q.solve(*SOLVER_CONFIG)
         qub_succ = (sdp_Q.status == 'optimal') or (sdp_Q.status == 'primal-dual feasible')
 
@@ -170,7 +170,8 @@ if TIMMING:
             print('Print probabilities P(ab|xy)')
             printProb(sdp_Q, P)
 
-        score = truncate(-sdp_Q.primal, ACCURATE_DIGIT)
+        qbound = truncate(-sdp_Q.primal, ACCURATE_DIGIT)
+        Q_BOUNDs = qbound
 
         # sdp_Q.get_relaxation(level=LEVEL, objective=bell_func(P),
         #                     substitutions = P.substitutions,
@@ -190,8 +191,8 @@ if TIMMING:
         if not qub_succ:
             print('Cannot compute quantum bound correctly!', file=sys.stderr)
         
+        score = qbound
         SCOREs[i] = score
-        # QLBs[i] = min_p_win
 
         
         results = singleRoundEntropy(RTYPE, P, Z, M, BEST_INP, bell_func, score,
@@ -203,33 +204,29 @@ if TIMMING:
         ENTROPYs[i] = entropy
         LAMBDAs[i] = lambda_
         C_LAMBDAs[i] = c_lambda
-        print(f'Entropy:{entropy:.5g}')
-        print(f'WinProb:{win_prob:.5g}')
-        print(f'Lambda:{lambda_:.5g}')
-        print(f'C_lambda:{c_lambda:.5g}')
+        # print(f'Entropy:{entropy:.5g}')
+        # print(f'WinProb:{win_prob:.5g}')
+        # print(f'Lambda:{lambda_:.5g}')
+        # print(f'C_lambda:{c_lambda:.5g}')
 
-    # if VERBOSE or SAVEDATA:
-    #     metadata = ['delta', 'qbound', 'entropy', 'lambda', 'c_lambda']
+    if VERBOSE or SAVEDATA:
+        metadata = ['delta', 'qbound', 'entropy', 'lambda', 'c_lambda']
+        headline = '\t'.join(metadata)
     
     if VERBOSE:
-        metadata = ['delta', 'score', 'entropy', 'lambda', 'c_lambda']
-        headline = '\t'.join(metadata)
         print(headline)
         
         for delta, score, entropy, lambda_, c_lambda in \
             zip(DELTAs, SCOREs, ENTROPYs, LAMBDAs, C_LAMBDAs):
-            line = '\t'.join((f'{delta:.5g}', f'{score:.5g}', f'{entropy:.5g}',
-                             f'{lambda_:.5g}', f'{c_lambda:.5g}'))
+            line = '\t'.join((f'{delta:.5g}', f'{score:.6f}', f'{entropy:.6f}',
+                             f'{lambda_:.6f}', f'{c_lambda:.6f}'))
             print(line)
 
         print("\n")
     
     # Write to file
     if SAVEDATA:
-        metadata = ['delta', 'score', 'entropy', 'lambda', 'c_lambda']
         data = np.vstack((DELTAs, SCOREs, ENTROPYs, LAMBDAs, C_LAMBDAs)).T
-
-        HEADER = ', '.join(metadata)
         # MAX_P_WIN = f'MAX_WIN_PROB\n{max_win:.5g}'
         # PRETXT = bytes(MAX_P_WIN, 'utf-8') + b'\n'
 
@@ -243,11 +240,11 @@ if TIMMING:
             with open(OUT_PATH, 'ab') as file:
                 file.write(b'\n')
                 # file.write(PRETXT)
-                np.savetxt(file, data, fmt='%.5g', delimiter=',', header=HEADER)
+                np.savetxt(file, data, fmt='%.5g', delimiter=',', header=headline)
         else:
             with open(OUT_PATH, 'wb') as file:
                 # file.write(PRETXT)
-                np.savetxt(file, data, fmt='%.5g', delimiter=',', header=HEADER)
+                np.savetxt(file, data, fmt='%.5g', delimiter=',', header=headline)
 
 if TIMMING:
     toc = time.time()
