@@ -26,7 +26,7 @@ SAVE = True                     # To save figure or not
 SHOW = False                    # To show figure or not
 SAVECSV = True                  # To save data or not
 DRAW_FROM_SAVED_DATA = True     # Plot the line with previous data if true
-TYPE = 'blind'                  # Type of randomness (one/two/blind)
+TYPE = 'one'                  # Type of randomness (one/two/blind)
 
 ### Parallel settings
 N_JOB = 8
@@ -242,8 +242,8 @@ if len(data_wbc.shape) == 1:
     data_wbc = np.array([data_wbc])
 data_len = data_wbc.shape[0]
 
-Labels = [r'$\mathrm{WBC}^{[22]}\ \displaystyle I_{\delta=\pi/6}$',
-          r'$\mathrm{WBC}^{[22]}\ \displaystyle I_{\delta=0.08391}$']
+Labels = [r'$\mathrm{WBC}^{[22]}\ \displaystyle I_{\delta=\pi/6}$']
+        #   r'$\mathrm{WBC}^{[22]}\ \displaystyle I_{\delta=0.08391}$']
 
 for i in range(data_len):
     delta, qbound, win_prob, entropy, lambda_, c_lambda = data_wbc[i]
@@ -270,7 +270,7 @@ for i in range(data_len):
                             inp_dist = INP_DIST, fin_rate_func = fr_func) for n in Ns)
         # print(FRs)
 
-        label = Labels[i]
+    label = Labels[i]
     plt.plot(Ns, FRs, color = 'darkred', label = label)
     MAX_R = max(MAX_R, np.max(FRs))
     if SAVECSV or (DRAW_FROM_SAVED_DATA and FILENOTFOUD):
