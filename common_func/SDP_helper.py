@@ -2,6 +2,7 @@ import numpy as np
 from sympy.physics.quantum.dagger import Dagger
 from joblib import Parallel, delayed
 import ncpol2sdpa as ncp
+from scipy import stats
 import chaospy
 import math
 
@@ -87,7 +88,7 @@ OBJ_FUNC_MAP = {'blind': inner_quad_obj_blind,
                 'two': inner_quad_obj_two}
 
 def innerQuad(P, Z, inputs, quad_t, quad_w, win_prob_expr, win_prob, win_tol, obj_func,
-              zero_class = '', zero_tol = 1e-9, substs = {}, extra_monos = [],
+              zero_class = '', zero_tol = 1e-10, substs = {}, extra_monos = [],
               level = 2, solver_config = [], verbose = 1):
     
     # Objective inside the quadrature summation
@@ -96,6 +97,7 @@ def innerQuad(P, Z, inputs, quad_t, quad_w, win_prob_expr, win_prob, win_tol, ob
     # Winning probability constraints
     p_win_constr = [win_prob_expr-win_prob+win_tol,
                    -win_prob_expr+win_prob+win_tol]
+    # p_win_constr = [win_prob_expr-win_prob]
     
     # Zero-probability constraints
     zero_pos = zero_position_map().get(zero_class, [])
@@ -106,15 +108,19 @@ def innerQuad(P, Z, inputs, quad_t, quad_w, win_prob_expr, win_prob, win_tol, ob
     sdp = ncp.SdpRelaxation(ops, verbose=max(verbose-3, 0))
     sdp.get_relaxation(level = level, objective = obj,
                         substitutions = substs,
+                        momentequalities = [],
                         momentinequalities = zero_constr + p_win_constr,
                         extramonomials = extra_monos)
 
     sdp.solve(*solver_config)
 
     if verbose >= 2:
+        print(quad_t)
         print(sdp.status, sdp.primal, sdp.dual)
 
-    assert sdp.status == 'optimal' or 'feasible' in sdp.status, 'Not solvable!'
+    assert sdp.status == 'optimal' or \
+           ('feasible' in sdp.status and 'infeasible' not in sdp.status), \
+           f'Status {sdp.status}, not promised solved'
     if sdp.status != 'optimal' and verbose >= 1:
         print('Solution does not reach optimal!')
     
@@ -122,10 +128,10 @@ def innerQuad(P, Z, inputs, quad_t, quad_w, win_prob_expr, win_prob, win_tol, ob
     entropy_in_quad = coeff * (1 + sdp.dual)
     p_win_in_quad = sdp[win_prob_expr]
     
-    if verbose >= 2:
+    if verbose >= 3:
         print(f'entropy in quad: {entropy_in_quad}')
         print(f'winning probability in quad: {p_win_in_quad}')
-        if verbose >= 3:
+        if verbose >= 4:
             printProb(sdp,P)
             printNorm(sdp,Z)
     
@@ -162,9 +168,10 @@ def innerQuad(P, Z, inputs, quad_t, quad_w, win_prob_expr, win_prob, win_tol, ob
 def singleRoundEntropy(rand_type, P, Z, M, inputs, win_prob_func, win_prob,
                        scenario = ([2,2],[2,2]), inp_probs = np.empty(0), win_tol = 1e-4,
                        zero_class = '', zero_tol = 1e-9, substs = {}, extra_monos = [],
-                       level = 2, n_worker_quad = 1, solver_config = [], verbose = 1):
+                       level = 2, quad_end = True, n_worker_quad = 1, solver_config = [], verbose = 1):
 
     inp_config = tuple(len(scenario[i]) for i in range(len(scenario)))
+    inp_probs = np.array(inp_probs)
     if inp_probs.size == 0:
         inp_probs = np.ones(inp_config)/np.prod(inp_config)
     else:
@@ -173,15 +180,20 @@ def singleRoundEntropy(rand_type, P, Z, M, inputs, win_prob_func, win_prob,
     win_prob_expr = win_prob_func(P, scenario = scenario, inp_probs = inp_probs)
 
     # Nodes, weights of quadrature up to 2*M terms
-    T, W = chaospy.quad_gauss_radau(M, chaospy.Uniform(0, 1), 1)    
+    QUAD_ENDPOINT = .999 if quad_end else 1.
+    T, W = chaospy.quad_gauss_radau(M, chaospy.Uniform(0, QUAD_ENDPOINT), QUAD_ENDPOINT)
     T = T[0]
-    NUM_NODE = len(T)
-    if verbose >= 2:
-        print(f'Number of terms summed in quadrature: {NUM_NODE}')
+    
+    if verbose >= 3:
+        # print(f'Number of terms summed in quadrature: {len(T)}')
         print(f'Nodes of the Gauss-Radau quadrature:\n{T}')
         print(f'Weights of the Gauss-Radau quadrature:\n{W}')
 
-    entropy = -1/(len(T)**2 * math.log(2)) + W[-1]/(T[-1]*math.log(2))
+    NUM_NODE = len(T)
+    if not quad_end:
+        NUM_NODE = NUM_NODE - 1
+
+    entropy = 0 #-1/(len(T)**2 * math.log(2)) + W[-1]/(T[-1]*math.log(2))
 
     assert rand_type in OBJ_FUNC_MAP, "Wrong 'rand_type' when calling singleRoundEntropy()!"
     obj_func = OBJ_FUNC_MAP[rand_type]
@@ -193,7 +205,7 @@ def singleRoundEntropy(rand_type, P, Z, M, inputs, win_prob_func, win_prob,
                                    win_prob, win_tol, obj_func,
                                    zero_class, zero_tol,
                                    substs, extra_monos, level,
-                                   solver_config, verbose) for i in range(NUM_NODE-1))
+                                   solver_config, verbose) for i in reversed(range(NUM_NODE)))
     # print(results)
 
     p_win_quad, entropy_quad, lambda_quad, p_zero_quad = zip(*results)
@@ -308,7 +320,6 @@ def probConstr(P, scenario=[[2,2],[2,2]]):
     return [P([a,b],[x,y]) for x in range(num_x) for y in range(num_y) \
             for a in range(configA[x]) for b in range(configB[y])]
 
-
 def alphaConstr(Zs, t_i):
     """
         Constraints for Eve's operators for i-th term of the quadrature
@@ -331,7 +342,7 @@ def printProb(sdp, P, scenario=[[2,2],[2,2]]):
         print(f'Wrong input scenario: {scenario}')
     for y in range(num_y):
         for b in range(configB[y]):
-            s = f'\t'.join([f'{sdp[P([a,b],[x,y])]:.5g}' \
+            s = f'\t'.join([f'{sdp[P([a,b],[x,y])]:.4f}' \
                             for x in range(num_x) for a in range(configA[x])])
             print(s)
 
@@ -345,5 +356,11 @@ def zeroPos2str(pos_list):
     pos_str = []
     for pos in pos_list:
         flat_pos = pos.reshape(np.sum(pos.shape))
-        pos_str.append( ''.join([str(i) for i in flat_pos]) )
+        pos_str.append(''.join([str(i) for i in flat_pos]))
     return pos_str
+
+def intervalSpacingBeta(interval, num_points, endpoint = True, a = 1.2, b = 0.8):
+    dist = stats.beta(a, b)
+    pp = np.linspace(*dist.cdf([0, 1]), num=num_points, endpoint = endpoint)
+    spacing_arr = interval[0] + dist.ppf(pp) * (interval[1] - interval[0])
+    return spacing_arr
