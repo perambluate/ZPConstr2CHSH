@@ -45,7 +45,7 @@ SMALL = False
 ALL_CLS = True
 
 ### Top directory where data saved
-COMMON_TOP = '/home/chunyo/Documents'
+COMMON_TOP = '../../..'
 MATLAB_TOP = os.path.join(COMMON_TOP, 'MATLAB/LocalRandomness')
 PYTHON_TOP = os.path.join(COMMON_TOP, 'python/ZPConstr2CHSH/blindRandomness')
 ### Directory to save figures
@@ -157,9 +157,11 @@ for scenario in SCENARIO:
             elif OPT == 'max_in':
                 max_input = np.argmax(np.array(data_list)[:,1][:,0])
                 data = data_list[max_input]
-                cls_name = cls.replace("_swap", "\\textsubscript{swap}")
-                # label = r'{} $\displaystyle x^*y^*={:0>2b}$'.format(cls_name, max_input)
-                label = r'{}'.format(cls_name)
+                label = 'CHSH'
+                if cls != 'chsh':
+                    cls_name = cls.replace("_swap", "\\textsubscript{swap}")
+                    # label = r'{} $\displaystyle x^*y^*={:0>2b}$'.format(cls_name, max_input)
+                    label = r'{}'.format(cls_name)
                 if cls == '2a':
                     label += ' (2b)'
 
@@ -204,6 +206,8 @@ for scenario in SCENARIO:
         plt.xlabel(X_TITLE, labelpad = 0)
         plt.ylabel(r"$\displaystyle H(A|BXYE')$")
         plt.yticks(np.arange(0, 1.2, 0.2))
+
+    plt.grid()
 
     if not SMALL:
         # SAVE_ARGS = {"bbox_extra_artists": (lgd,), "bbox_inches": 'tight'}

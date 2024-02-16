@@ -9,7 +9,7 @@ sys.path.append('..')
 from common_func.plotting_helper import *
 
 TOP = './'
-DATA_DIR = os.path.join(TOP,'data/asymp_rate')
+DATA_DIR = os.path.join(TOP,'data/asym_rate')
 X_NORMALIZED = False
 ZERO_CLASS = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
 DATA_COM = 'opr'
@@ -19,6 +19,11 @@ SORT = False
 PUT_MARKER = False
 SAVE = True     # To save file or not
 SHOW = False    # To show figure or not
+
+CLASS_INPUT_MAP = cls_inp_map('one')
+WTOL = 'wtol_2e-05'
+ZTOL = 'ztol_1e-10'
+QUAD = 'M_18'
 
 ### Figure related
 titlesize = 32
@@ -44,25 +49,31 @@ plt.subplots_adjust(**SUBPLOT_PARAM)
 
 ### Average/max over different inputs
 for cls in ZERO_CLASS:
-    file_list = [f'{DATA_COM}-{cls}-x_{x}-M_12-wtol_1e-04-ztol_1e-09.csv' \
-                 for x in range(2)]
+    INP = f'x_{CLASS_INPUT_MAP[cls]}'
+    file = f'{DATA_COM}-{cls}-{INP}-{WTOL}-{ZTOL}-{QUAD}.csv'
+    # file_list = [f'{DATA_COM}-{cls}-x_{x}-M_12-wtol_1e-04-ztol_1e-09.csv' \
+    #              for x in range(2)]
 
-    data_list = []
-    for i in range(len(file_list)):
-        file_ = file_list[i]
-        data = np.genfromtxt(
-                    os.path.join(DATA_DIR, file_), delimiter=',', skip_header=3).T
-        data = data[:2,:]
-        if SORT:
-            data = sort_data(data)
-        data_list.append(data)
+    # data_list = []
+    # for i in range(len(file_list)):
+    #     file_ = file_list[i]
+    #     data = np.genfromtxt(
+    #                 os.path.join(DATA_DIR, file_), delimiter=',', skip_header=3).T
+    #     data = data[:2,:]
+    #     if SORT:
+    #         data = sort_data(data)
+    #     data_list.append(data)
         
-    ### Maximize
-    max_input = np.argmax(np.array(data_list)[:,1][:,0])
-    data = data_list[max_input]
-    class_name = cls.replace("_swap", "\\textsubscript{swap}")
-    # label = r'{} $\displaystyle x^*={}$'.format(class_name, max_input)
-    label = r'{}'.format(class_name)
+    # ### Maximize
+    # max_input = np.argmax(np.array(data_list)[:,1][:,0])
+    # data = data_list[max_input]
+    data = np.genfromtxt(os.path.join(DATA_DIR, file), delimiter=',', skip_header=3).T
+    data = data[:2,:]
+    label = 'CHSH'
+    if cls != 'chsh':
+        class_name = cls.replace("_swap", "\\textsubscript{swap}")
+        # label = r'{} $\displaystyle x^*={}$'.format(class_name, max_input)
+        label = r'{}'.format(class_name)
     
     color='gray'
     if '1' in cls:
@@ -90,10 +101,11 @@ if X_NORMALIZED:
     X_TITLE += ' (normalized with quantum bound)'
 plt.xlabel(X_TITLE)
 plt.ylabel(r"$\displaystyle H(A|XYE')$")
-OUT_COM = 'single-asymp'
-TAIL = 'test'
+plt.grid()
+OUT_COM = 'local-asym'
+TAIL = ''
 FORMAT = 'png'
-OUT_NAME = f'{OUT_COM}-all_cls'
+OUT_NAME = f'{OUT_COM}-{WTOL}-{ZTOL}-{QUAD}'
 if TAIL:
     OUT_NAME = f'{OUT_NAME}-{TAIL}'
 OUT_FILE = f'{OUT_NAME}.{FORMAT}'

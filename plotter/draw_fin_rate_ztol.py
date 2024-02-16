@@ -32,7 +32,6 @@ from functools import partial
 from joblib import Parallel, delayed
 import numpy as np
 import itertools
-import math
 import os, sys
 import re
 
@@ -46,12 +45,12 @@ class MyScalarFormatter(ScalarFormatter):
     def _set_format(self):
         self.format = '%.2f'  # Show 2 decimals without redundant zeros
 
-PRINT_DATA = False  # To print values of data
-SAVE = True        # To save figure or not
-SHOW = False        # To show figure or not
-SAVECSV = False      # To save data or not
-DRAW_FROM_SAVED_DATA = True    # Plot the line with previous data if true
-TYPE = 'one'        # Type of randomness (one/two/blind)
+PRINT_DATA = False              # To print values of data
+SAVE = True                     # To save figure or not
+SHOW = False                    # To show figure or not
+SAVECSV = False                 # To save data or not
+DRAW_FROM_SAVED_DATA = True     # Plot the line with previous data if true
+TYPE = 'one'                    # Type of randomness (one/two/blind)
 
 ### Change the GUI backend to get rid of the multi-threading runtime error with tkinter
 if not SHOW:
@@ -62,7 +61,8 @@ TOP_DIR = top_dir(TYPE)
 DATA_DIR = os.path.join(TOP_DIR, 'data')
 OUTCSV_DIR = os.path.join(DATA_DIR, 'fin_rate')
 if TYPE == 'blind':
-    DATA_DIR = os.path.join(DATA_DIR, 'BFF21/w_max_77')
+    # DATA_DIR = os.path.join(DATA_DIR, 'BFF21/w_max_77')
+    DATA_DIR = os.path.join(DATA_DIR, 'BFF21')
 elif TYPE in ['one', 'two']:
     DATA_DIR = os.path.join(DATA_DIR, 'asymp_rate')
 
@@ -83,8 +83,11 @@ INP_DIST = [1/4]*4
 OUT_DIR = os.path.join(TOP_DIR, 'figures/')
 if TYPE == 'blind':
     HEAD = 'br'
-elif TYPE =='one' or TYPE == 'two':
-    HEAD = 'max_w77'
+elif TYPE =='one':
+    HEAD = 'opr'
+elif TYPE == 'two':
+    HEAD = 'tpr'
+# HEAD += '_ztoltest'
 EPS = f'eps_{EPSILON:.0e}'
 WTOL = f'wtol_{WIN_TOL:.0e}'
 QUAD = 'M_12'
@@ -94,12 +97,13 @@ CSVHEAD = ''
 ######### Plotting settings #########
 # FIG_SIZE = (16, 9)      # for aspect ratio 16:9
 FIG_SIZE = (12, 9)    # for aspect ratio 4:3
+# FIG_SIZE = (7, 9)
 DPI = 200
-SUBPLOT_PARAM = {'left': 0.1, 'right': 0.98,'bottom': 0.1, 'top': 0.905, 'wspace': 0.28}
+SUBPLOT_PARAM = {'left': 0., 'right': 0.98,'bottom': 0., 'top': 0.905, 'wspace': 0.}
 
 ### Set font sizes and line width
-titlesize = 36
-ticksize = 32
+titlesize = 32
+ticksize = 30
 legendsize = 30
 linewidth = 3
 
@@ -110,9 +114,9 @@ mplParams["xtick.major.pad"] = 10
 plt.rcParams.update(mplParams)
 
 ### Num of rounds
-N_RANGE = (1e6, 1e14)
+# N_RANGE = (1e6, 1e14)
 if TYPE == 'two':
-    N_RANGE = (5e5, 1e14)
+    N_RANGE = (5e5, 1e15)
 elif TYPE == 'one':
     N_RANGE = (1e6, 1e14)
 elif TYPE == 'blind':
@@ -136,7 +140,7 @@ NU_PRIME_SLICE = 50
 NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 
 ### All classes to plot
-CLASSES = ['chsh', '3b']
+CLASSES = ['chsh', '2a']
 # CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
 # if TYPE == 'two':
 #     CLASSES.remove('2b_swap')
@@ -167,106 +171,179 @@ for cls in CLASSES:
     else:
         INP = f'xy_{inp}'
 
-    if cls == 'chsh':
-        ZERO_TOLs = [ZERO_PROB]
-    else:
-        ZERO_TOLs = [1e-9, 1e-3] #[1e-9, 1e-5, 1e-3]
+    #if cls == 'chsh':
+    #    ZERO_TOLs = [ZERO_PROB]
+    #else:
+    #    ZERO_TOLs = [1e-9, 1e-3] #[1e-9, 1e-5, 1e-3]
 
     ### Run over all zero tolerances in ZERO_TOLs
-    for zero_tol in ZERO_TOLs:
-        ZTOL = f'ztol_{zero_tol:.0e}'
+    # for zero_tol in ZERO_TOLs:
+    if cls == 'chsh':
+        zero_tol = ZERO_PROB
+        ZTOL = f'ztol_{ZERO_PROB:.0e}'
         MTF_DATA_FILE = f'{HEAD}-{CLS}-{INP}-{QUAD}-{WTOL}-{ZTOL}.csv'
-        MTF_DATA_PATH = os.path.join(DATA_DIR, MTF_DATA_FILE)
+    else:
+        MTF_DATA_FILE = f'{HEAD}_ztoltest-{CLS}-{INP}-{WTOL}-{QUAD}.csv'
+    MTF_DATA_PATH = os.path.join(DATA_DIR, MTF_DATA_FILE)
 
-        ### Get the maximum winnin probability
+    ### Get the maximum winnin probability
+    if cls == 'chsh':
         with open(MTF_DATA_PATH) as file:
             max_win = float(file.readlines()[1])
 
         ### Load data
         data_mtf = np.genfromtxt(MTF_DATA_PATH, delimiter=",", skip_header = 3)
-        # print(data_mtf)
+    else:
+        data_mtf = np.genfromtxt(MTF_DATA_PATH, delimiter=",", skip_header = 1)
+
+    # print(data_mtf)
+    
+    # line = next(LINES)
+    ### Colors for different winning probabilities
+    # color_iter = itertools.cycle(COLORS)
+
+    # titles = []
+
+    ### Choose min-tradeoff function with expected winning prob
+    if len(data_mtf.shape) == 1:
+        data_mtf = np.array([data_mtf])
+    # data_len = data_mtf.shape[0]
+    if cls == 'chsh':
+        _range = (0, 1)
+    else:
+        _range = (1, 3)
+
+    #### For different w_exp (or other parameters) in the data
+    for i in range(*_range):
+        ### Read the data
+        if cls == 'chsh':
+            win_prob, asym_rate, lambda_ = data_mtf[i][:3]
+            c_lambda = data_mtf[i][-1]
+        else:
+            zero_tol = data_mtf[i][0]
+            max_win = data_mtf[i][1]
+            win_prob, asym_rate, lambda_ = data_mtf[i][2:5]
+            lambda_zeros = data_mtf[i][5:-1]
+            c_lambda = data_mtf[i][-1] - sum(lambda_zeros)*zero_tol
         
-        line = next(LINES)
-        ### Colors for different winning probabilities
-        # color_iter = itertools.cycle(COLORS)
-
-        titles = []
-
-        ### Choose min-tradeoff function with expected winning prob
-        if len(data_mtf.shape) == 1:
-            data_mtf = np.array([data_mtf])
-        data_len = data_mtf.shape[0]
-
-        #### For different w_exp (or other parameters) in the data
-        for i in range(1):
-            FILENOTFOUD = False
-            if DRAW_FROM_SAVED_DATA:
-                win_prob = data_mtf[i][0]
-                WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
-                FIN_DATA_FILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
-                FIN_DATA_PATH = os.path.join(OUTCSV_DIR, FIN_DATA_FILE)
-                if os.path.exists(FIN_DATA_PATH):
-                    data = np.genfromtxt(FIN_DATA_PATH, delimiter=",", skip_header = 1).T
-                    Ns = data[0]
-                    FRs = data[1]
-                else:
-                    print(f'File path: {FIN_DATA_PATH} does not exist, compute the data and save.')
-                    FILENOTFOUD = True
-            
-            if FILENOTFOUD or not DRAW_FROM_SAVED_DATA:
-                win_prob, asym_rate, lambda_ = data_mtf[i][:3]
-                c_lambda = data_mtf[i][-1]
-                if cls != 'CHSH':
-                    lambda_zeros = data_mtf[i][3:-1]
-                    c_lambda -= sum(lambda_zeros)*zero_tol
-
-    ##################### Compute key rate with optimal parameters #####################
-                ### Construct key rate function with fixed param (only leave n, beta tunable)
-                fr_func = partial(fin_rate_testing, asym_rate = asym_rate,
-                                        lambda_ = lambda_, c_lambda = c_lambda,
-                                        zero_tol = zero_tol, zero_class=cls,
-                                        max_win = max_win, min_win = 1 - max_win)
-
-                FRs = Parallel(n_jobs=N_JOB, verbose = 0)(
-                      delayed(opt_all)(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs,
-                                       inp_dist = INP_DIST, fin_rate_func = fr_func) for n in Ns)
-                FRs = np.array(FRs)
-                
-                if PRINT_DATA:
-                    print(np.column_stack((Ns, FRs)))
-
-                if SAVECSV or (DRAW_FROM_SAVED_DATA and FILENOTFOUD):
-                    data2save = np.column_stack((Ns, FRs))
-                    HEADER = 'rounds, rate'
-                    WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
-                    ZTOL = f'ztol_{zero_tol:.0e}'
-                    # OUTCSV = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
-                    OUTCSV = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
-                    OUTCSV_PATH = os.path.join(OUTCSV_DIR, OUTCSV)
-                    np.savetxt(OUTCSV_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
-            
-##################################### Draw line ##################################### 
-            ### Colors for different zero tolerances
-            # color = next(color_iter)
+        FILENOTFOUD = False
+        if DRAW_FROM_SAVED_DATA:
             if cls == 'chsh':
-                color = 'darkcyan'
-                label = CLS
+                win_prob = data_mtf[i][0]
             else:
-                color = 'darkred'
-                label = CLS+r' $\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
+                win_prob = data_mtf[i][2]
+            WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
+            ZTOL = f'ztol_{zero_tol:.0e}'
+            FIN_DATA_FILE = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
+            FIN_DATA_PATH = os.path.join(OUTCSV_DIR, FIN_DATA_FILE)
+            if os.path.exists(FIN_DATA_PATH):
+                data = np.genfromtxt(FIN_DATA_PATH, delimiter=",", skip_header = 1).T
+                Ns = data[0]
+                FRs = data[1]
+            else:
+                print(f'File path: {FIN_DATA_PATH} does not exist, compute the data and save.')
+                FILENOTFOUD = True
+        
+        if FILENOTFOUD or not DRAW_FROM_SAVED_DATA:
+            # if cls == 'chsh':
+            #     win_prob, asym_rate, lambda_ = data_mtf[i][:3]
+            #     c_lambda = data_mtf[i][-1]
+            # else:
+            #     zero_tol = data_mtf[i][0]
+            #     max_win = data_mtf[i][1]
+            #     win_prob, asym_rate, lambda_ = data_mtf[i][2:5]
+            #     lambda_zeros = data_mtf[i][5:-1]
+            #     c_lambda = data_mtf[i][-1] - sum(lambda_zeros)*zero_tol
+
+##################### Compute key rate with optimal parameters #####################
+            ### Construct key rate function with fixed param (only leave n, beta tunable)
+            fr_func = partial(fin_rate_testing, asym_rate = asym_rate,
+                                    lambda_ = lambda_, c_lambda = c_lambda,
+                                    zero_tol = zero_tol, zero_class=cls,
+                                    max_win = max_win, min_win = 1 - max_win)
+
+            FRs = Parallel(n_jobs=N_JOB, verbose = 0)(
+                    delayed(opt_all)(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs,
+                                    inp_dist = INP_DIST, fin_rate_func = fr_func) for n in Ns)
+            FRs = np.array(FRs)
             
-            ### Set labels of legends
-            # label = CLS+r' $\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
+            if PRINT_DATA:
+                print(np.column_stack((Ns, FRs)))
+
+            if SAVECSV or (DRAW_FROM_SAVED_DATA and FILENOTFOUD):
+                data2save = np.column_stack((Ns, FRs))
+                HEADER = 'rounds, rate'
+                WEXP = f'w_{win_prob*10000:.0f}'.rstrip('0')
+                ZTOL = f'ztol_{zero_tol:.0e}'
+                # OUTCSV = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{GAM}-{QUAD}.csv'
+                OUTCSV = f'{CLS}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
+                OUTCSV_PATH = os.path.join(OUTCSV_DIR, OUTCSV)
+                np.savetxt(OUTCSV_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
+        
+##################################### Draw line ##################################### 
+        ### Colors for different zero tolerances
+        # color = next(color_iter)
+        if cls == 'chsh':
+            color = 'grey'
+            label = 'CHSH'
+        else:
+            #if cls == '2a':
+            color = 'blue'
+            #else:
+            #    color = 'darkred'
+            label = CLS+r' $\displaystyle \eta_{z}$'+f'={zero_tol:.0e}'
+        
+        ### Set labels of legends
+        # label = CLS+r' $\displaystyle \delta_{zero}$'+f'={zero_tol:.0e}'
 
 ################################ Plotting lines ################################
-            # axs[i].plot(Ns, FRs, linestyle = line, color = color, label = label)
-            plt.plot(Ns, FRs, linestyle = line, color = color, label = label)
-            # titles.append(r'$\displaystyle w_{exp}$'+f'={win_prob:.4g}')
-            MAX_R = max(MAX_R, np.max(FRs))
+        line = next(LINES)
+        # axs[i].plot(Ns, FRs, linestyle = line, color = color, label = label)
+        plt.plot(Ns, FRs, linestyle = line, color = color, label = label)
+        # titles.append(r'$\displaystyle w_{exp}$'+f'={win_prob:.4g}')
+        MAX_R = max(MAX_R, np.max(FRs))
+
+#### Draw WBC rate
+DATAPATH = f'./WBC_inequality/data/wbc_{TYPE}-{WTOL}-{QUAD}.csv'
+data_wbc = np.genfromtxt(DATAPATH, delimiter=",", skip_header = 1)
+if len(data_wbc.shape) == 1:
+    data_wbc = np.array([data_wbc])
+data_len = data_wbc.shape[0]
+
+# Labels = [r'$\mathrm{WBC}^{[16]}\ \displaystyle I_{\delta=0.5236}$',
+#           r'$\mathrm{WBC}^{[16]}\ \displaystyle I_{\delta=0.08391}$']
+
+for i in range(1):
+    delta, qbound, win_prob, entropy, lambda_, c_lambda = data_wbc[i]
+    ZTOL = f'ztol_{zero_tol:.0e}'
+    FIN_DATA_FILE = f'wbc-fin-{TYPE}-{WEXP}-{EPS}-{WTOL}-{ZTOL}-{QUAD}-{N_POINT}.csv'
+    FIN_DATA_PATH = os.path.join('./WBC_inequality/data', FIN_DATA_FILE)
+    if os.path.exists(FIN_DATA_PATH):
+        data = np.genfromtxt(FIN_DATA_PATH, delimiter=",", skip_header = 1).T
+        Ns = data[0]
+        FRs = data[1]
+    else:
+        print(f'File path: {FIN_DATA_PATH} does not exist, compute the data and save.')
+        FILENOTFOUD = True
+        fr_func = partial(fin_rate_testing, asym_rate = entropy, lambda_ = lambda_,
+                        c_lambda = c_lambda, max_win = qbound, min_win = 1-qbound)
+        
+        FRs = Parallel(n_jobs = N_JOB, verbose = 0)(
+            delayed(opt_all)(n, beta_arr = BETAs, nup_arr = NU_PRIMEs, gam_arr = GAMMAs,
+                            inp_dist = INP_DIST, fin_rate_func = fr_func) for n in Ns)
+        # print(FRs)
+
+    label = r'$\mathrm{{WBC}}^{{[16]}}\ \displaystyle I_{{\delta={{{}}}}}$'.format(delta)
+    plt.plot(Ns, FRs, color = 'darkred', label = label)
+    MAX_R = max(MAX_R, np.max(FRs))
+    if SAVECSV or (DRAW_FROM_SAVED_DATA and FILENOTFOUD):
+        data2save = np.column_stack((Ns, FRs))
+        HEADER = 'rounds, rate'
+        np.savetxt(FIN_DATA_PATH, data2save, fmt='%.5g', delimiter=',', header=HEADER)
 
 ################################ Save figure ################################
-YLABEL = r'$\displaystyle r$'+' (bit per round)'
-XLABEL = r'$\displaystyle n$'+' (number of rounds)'
+YLABEL = r'$\displaystyle r$' #+' (bit per round)'
+XLABEL = r'$\displaystyle n$' #+' (number of rounds)'
 ### For two subplots
 # axs[0].label_outer()
 # axs[0].set_ylabel(ylabel=YLABEL)
@@ -298,11 +375,14 @@ ax.legend(loc='lower right')
 
 ### Apply the graphic settings
 plt.subplots_adjust(**SUBPLOT_PARAM)
-fig.tight_layout(pad=1)
+fig.tight_layout(pad=.2)
+
+plt.grid()
 
 if SAVE:
-    COM = f'fin-{TYPE}-chsh_{CLASSES[1]}-qbound'
-    TAIL = ''
+    # COM = f'fin-{TYPE}-chsh_{CLASSES[1]}-qbound'
+    COM = f'fin-{TYPE}-compare_wbc_chsh_{CLASSES[1]}-qbound'
+    TAIL = '0'
     FORMAT = 'png'
     # OUT_NAME = f'{COM}-{CLS}-{INP}-{EPS}-{WTOL}-{QUAD}'
     OUT_NAME = f'{COM}-{INP}-{EPS}-{WTOL}-{QUAD}'

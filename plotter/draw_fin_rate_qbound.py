@@ -39,11 +39,11 @@ sys.path.append('.')
 from common_func.plotting_helper import *
 
 PRINT_DATA = False  # To print values of data
-SAVE = True         # To save figure or not
+SAVE = False         # To save figure or not
 SHOW = True        # To show figure or not
-SAVECSV = True     # To save data or not
-DRAW_FROM_SAVED_DATA = False     # Plot the line with previous data if true
-TYPE = 'one'        # Type of randomness (one/two/blind)
+SAVECSV = False     # To save data or not
+DRAW_FROM_SAVED_DATA = True     # Plot the line with previous data if true
+TYPE = 'two'        # Type of randomness (one/two/blind)
 
 ### Change the GUI backend to get rid of the multi-threading runtime error with tkinter
 if not SHOW:
@@ -131,11 +131,11 @@ NU_PRIMEs = np.linspace(1, 0.1, num=NU_PRIME_SLICE)
 fig = plt.figure(figsize=FIG_SIZE, dpi=DPI)
 
 ### All classes to plot
-CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
-# CLASSES = ['chsh','1','2c', '3b']
-if TYPE == 'two':
+# CLASSES = ['chsh','1','2a','2b','2b_swap','2c','3a','3b']
+CLASSES = ['chsh','2a']
+if TYPE == 'two' and '2b_swap' in CLASSES:
     CLASSES.remove('2b_swap')
-ZERO_TOLs = [1e-9]
+ZERO_TOLs = [1e-9, 1e-3]
 
 ################################ Iter for different parameters ################################
 ### Run over all classes in CLASSES
@@ -245,6 +245,8 @@ ax = plt.gca()
 ax.xaxis.set_major_locator(mticker.LogLocator(numticks=5))
 ax.xaxis.set_minor_locator(mticker.LogLocator(numticks=4, subs="auto"))
 plt.legend(prop={"weight":"bold"})
+
+plt.grid()
 
 ### Apply the graphic settings
 plt.subplots_adjust(**SUBPLOT_PARAM)
