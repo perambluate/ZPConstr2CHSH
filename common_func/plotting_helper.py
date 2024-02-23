@@ -36,9 +36,9 @@ def fin_rate_testing(n, beta, nu_prime, gamma, asym_rate, lambda_, c_lambda,
     else:
         epsi_term = math.log2(1 - math.sqrt(1 - epsilon**2) )
     
-    epsi_win = math.e ** (-2 * win_tol**2 * n)
+    epsi_win = math.e ** (-2 * win_tol**2 * n * gamma)
     zero_tol = zero_tol/2
-    epsi_zero = math.e ** (-2 * zero_tol**2 * n)
+    epsi_zero = math.e ** (-2 * zero_tol**2 * n * gamma)
     try:
         log_prob = math.log2(1 - epsi_win)
         if zero_class in ALL_NSB_CLASSES:

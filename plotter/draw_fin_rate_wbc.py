@@ -24,9 +24,9 @@ def min_quantum_score(max_win_q, delta):
 PRINT_DATA = False              # To print values of data
 SAVE = True                     # To save figure or not
 SHOW = False                    # To show figure or not
-SAVECSV = True                  # To save data or not
-DRAW_FROM_SAVED_DATA = True     # Plot the line with previous data if true
-TYPE = 'one'                  # Type of randomness (one/two/blind)
+SAVECSV = False                  # To save data or not
+DRAW_FROM_SAVED_DATA = False     # Plot the line with previous data if true
+TYPE = 'blind'                  # Type of randomness (one/two/blind)
 
 ### Parallel settings
 N_JOB = 8
