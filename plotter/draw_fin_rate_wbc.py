@@ -25,7 +25,7 @@ PRINT_DATA = False              # To print values of data
 SAVE = True                     # To save figure or not
 SHOW = False                    # To show figure or not
 SAVECSV = False                  # To save data or not
-DRAW_FROM_SAVED_DATA = False     # Plot the line with previous data if true
+DRAW_FROM_SAVED_DATA = True     # Plot the line with previous data if true
 TYPE = 'blind'                  # Type of randomness (one/two/blind)
 
 ### Parallel settings
@@ -242,8 +242,7 @@ if len(data_wbc.shape) == 1:
     data_wbc = np.array([data_wbc])
 data_len = data_wbc.shape[0]
 
-Labels = [r'$\mathrm{WBC}^{[22]}\ \displaystyle I_{\delta=\pi/6}$']
-        #   r'$\mathrm{WBC}^{[22]}\ \displaystyle I_{\delta=0.08391}$']
+Labels = [r'$\mathrm{WBC}^{[29]}\ \displaystyle I_{\delta=\pi/6}$']
 
 for i in range(data_len):
     delta, qbound, win_prob, entropy, lambda_, c_lambda = data_wbc[i]
