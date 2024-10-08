@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DIR=./
+TOP=./
+DIR=${TOP}
 
 print_usage() {
   printf "Usage: i) bash run_bg.sh -t TYPE -m METHOD\n"
@@ -16,7 +17,7 @@ do
     case "${flag}" in
         t) TYPE=${OPTARG};;
         m) METHOD=${OPTARG};;
-        d) DIR=${OPTARG};;
+        d) DIR=${TOP}/${OPTARG};;
         f) FILE=${OPTARG};;
         *) print_usage
             exit 1 ;;
@@ -26,7 +27,7 @@ done
 if ! [ -n "$FILE" ]; then
     case $TYPE in
         blind)
-            DIR=./blindRandomness
+            DIR=${TOP}/blindRandomness
             if [ -n "$METHOD" ];then
                 case $METHOD in
                     BFF21|bff21) FILE=bff21/blindRandomness-BFF21.py;;
@@ -40,7 +41,7 @@ if ! [ -n "$FILE" ]; then
             fi
             ;;
         one|two)
-            DIR=./${TYPE}PartyRandomness
+            DIR=${TOP}/${TYPE}PartyRandomness
             FILE=${TYPE}PartyRandomness.py
             ;;
         *)  echo "Neither TYPE is wrong nor \
@@ -57,5 +58,5 @@ FN=${FILE##*/}
 LOG=log_${FN%\.py}-$(date +%H%M_%d%m%y).txt
 
 # Run in background
-cd $DIR && \
-nohup python $FILE > $LOG 2>&1 &
+cd "${DIR}" && \
+nohup time python "${FILE}" > "${LOG}" 2>&1 &
