@@ -21,7 +21,7 @@ class MinTradeoffFunction():
         - lambda_vec: lambda vec, an vec of the dual vars corresponding to the score constraints
         - c_lambda: the constant term in the Lagrange dual function
         - num_score: num of the score constraints, equal to the length of the dual vars
-        - inp_dist: a high dimentional np-array repr the input probabilities
+        - inp_dist: a high dimensional np-array repr the input probabilities
         - score_coeffs: a list of np-arrays that record the coeffs of the scores
         - npa_level: level of NPA hierarchy
         - solver_config: SDP solver config
