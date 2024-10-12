@@ -21,8 +21,7 @@ PRIMAL_DUAL_GAP = 1e-5          # Allowable gap between primal and dual
 SOLVER_CONFIG = ['mosek', {'dparam.intpnt_co_tol_rel_gap': PRIMAL_DUAL_GAP,
                            'iparam.num_threads': N_WORKER_SDP,
                            'iparam.infeas_report_level': 4}]
-# SOLVER_CONFIG = ['sdpa']
-ACCURATE_DIGIT = 4              # Achievable precision of the solver
+TRUNCATE_DIGIT = 4              # Achievable precision of the solver
 WIN_TOL = 1e-4                  # Relax the precise winning prob constraint to a range with epsilon
 ZERO_PROB = 1e-9                # Treat this value as zero for zero probability constraints
 QUAD_END = True                 # Do the optimization for the last term (endpoint) of the Gauss-Radau quadrature or not
@@ -231,7 +230,7 @@ print('Status\tPrimal\tDual')
 print(f'{sdp_Q.status}\t{sdp_Q.primal}\t{sdp_Q.dual}')
 
 # Maximal quantum winning probability estimated with NPA set of given level
-max_win = truncate(-sdp_Q.primal, ACCURATE_DIGIT)
+max_win = truncate(-sdp_Q.primal, TRUNCATE_DIGIT)
 
 inp_config = tuple(len(SCENARIO[i]) for i in range(len(SCENARIO)))
 inp_probs = np.ones(inp_config)/np.prod(inp_config)
@@ -265,7 +264,7 @@ p_win_quad, entropy_quad, lambda_quad, p_zero_quad = zip(*results)
 zero_pos_str = zeroPos2str(zero_pos)
 lambda_zp_str = [f'lambda_{pos}' for pos in zero_pos_str]
 zp_str = [f'p_zero_{pos}' for pos in zero_pos_str]
-metadata = ['win_prob', 'entropy', 'lambda', *lambda_zp_str, *zp_str]
+metadata = ['win_prob', 'entropy_in_quad', 'lambda', *lambda_zp_str, *zp_str]
 headline = ' '.join(metadata)
 print(headline)
 
@@ -278,10 +277,9 @@ for p_win, entropy, lambda_, p_zero in zip(p_win_quad, entropy_quad, lambda_quad
     print(line)
 
 print("")
-# print(f'P_win_quad:{p_win_quad}')
-# print(f'entropy_quad:{entropy_quad}')
 
 # The lower bound on the von Neumann entropy H(AB|XYE') (asymptotic rate)
 entropy = np.sum(np.array(entropy_quad))
 
-print(entropy)
+print(f'entropy: {entropy}')
+
