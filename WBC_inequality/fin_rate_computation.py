@@ -1,7 +1,6 @@
 import numpy as np
 from math import log, log2, sqrt, e, floor
 from functools import partial
-from collections.abc import Iterable
 from joblib import Parallel, delayed
 from time import time
 import re
