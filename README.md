@@ -16,7 +16,6 @@ The computation is performed according to the *Brown-Fawzi-Fawzi* (or BFF21) met
 
 ## Software
 Python3
-> Teasted: Python 3.8.13
 
 ### Required packages
 
@@ -28,7 +27,7 @@ One the following SDP solvers
 - CVXOPT
 - SDPA
 - MOSEK
-> Used in this package: Mosek 9.3.22
+> Used in this package: Mosek
 
 SDP solver interface
 - CVXPY
