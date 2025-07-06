@@ -127,8 +127,8 @@ def completeness_wplb(n, gamma, wtol, wexp):
 def completeness_lpub(n, gamma, wtol, wexp):
     """Completeness for protocols with a lossing-probability upper-bound check
     """
-    k = floor(n*gamma*(wexp+wtol))
-    p= gamma*wexp
+    k = floor(n*gamma*(1-wexp+wtol))
+    p= gamma*(1-wexp)
     return 1 - binom.cdf(k, floor(n), p)
 
 class finiteRateCalculator():
