@@ -14,7 +14,8 @@ def bin_shannon_entropy(p):
     """Binary Shannon entropy
         - p: float, probability of an outcome of binary RV
     """
-    assert p >= 0. and p <= 1., 'Input should be a valid probability!'
+    if p < 0. or p > 1.:
+        raise ValueError(f'Invalid input {p}. Expect a float in [0, 1].')
     if p == 0. or p == 1.:
         return 0.
     
@@ -26,10 +27,10 @@ def shannon_entropy(prob, digit = DIGIT):
         - digit: int, digit of accuracy to check normalization
     """
     prob = np.array(prob)
-    assert ((prob >= 0).all() and (prob <= 1).all() and \
-            round(np.sum(prob), digit) == 1),\
-            'Input should be a valid probability distribution!'
-    
+    if not ((prob >= 0).all() and (prob <= 1).all() and \
+            round(np.sum(prob), digit) == 1):
+        raise ValueError('Input should be a valid probability distribution!')
+
     zero_indexes = np.argwhere(prob == 0)
     for index in zero_indexes:
         prob[index] = sys.float_info.min
@@ -64,8 +65,8 @@ def fin_rate(n, beta, nu_prime, gamma, asym_rate, d_K, lambda_, epsilon,
                               upper-bound ('ub') threshold
     """
     
-    assert WP_check_direction in ('lb', 'ub'), \
-            'Invalid WP_check_direction. Plz set as one of the followings: "lb" or "ub".'
+    if not WP_check_direction in ('lb', 'ub'):
+        raise ValueError(f'Invalid WP_check_direction. Should be "lb" or "ub" while got {WP_check_direction}')
     
     loge = log2(exp(1))
     ln2 = log(2)
@@ -135,26 +136,20 @@ class finiteRateCalculator():
     """Class to compute finite rates for DIRE protocols w/o ZP constraints
         - rand_type: str (loc, glo, bli), type of DI randomness to compute
         - finrate_params: dict with the following keys:
-                          - kappa: str ('1', '2a', '2b', '2c', '3a', '3b') or None, class of
-                                   the ZP constraints
-                          - asym_rate: float, asymptotic rate of the DIRE protocol with
-                                       specified settings
-                          - WP_check_direction: str ('lb', 'ub'), check WP satisfying the lower-
-                                                bound ('lb') or upper-bound ('ub') threshold
-                          - inp_prob: high dimensional list/np-array, input probabilities
-                          - n: int or float, num of rounds of the nonlocal game to perform
-                          - gamma: float in interval (0, 1], ratio of num of testing rounds to
-                                   num of total rounds
-                          - wexp: float, expected winning probability
-                          - wtol: float in interval (0, 1), tolerant level for WP constraint
-                          - ztol: float in interval (0, 1), tolerant level for ZP constraint
-                          - eps: float, smoothness of the smooth min-entropy, related to
-                                 security param
-                          - lambda: list of float, vec of dual vars of the SDP to compute
-                                    asymptotic rate
-        - wp_Qbound: dict with the keys:
-                     - max (min): float, maximum (minimum) winning probability of the nonlocal game
-                                  over the quantum set
+            - kappa: str ('1', '2a', '2b', '2c', '3a', '3b') or None, class of the ZP constraints
+            - asym_rate: float, asymptotic rate of the DIRE protocol with specified settings
+            - WP_check_direction: str ('lb', 'ub'), check WP satisfying the lower-bound ('lb') or
+                upper-bound ('ub') threshold
+            - inp_prob: high dimensional list/np-array, input probabilities
+            - n: int or float, num of rounds of the nonlocal game to perform
+            - gamma: float in interval (0, 1], ratio of num of testing rounds to num of total rounds
+            - wexp: float, expected winning probability
+            - wtol: float in interval (0, 1), tolerant level for WP constraint
+            - ztol: float in interval (0, 1), tolerant level for ZP constraint
+            - eps: float, smoothness of the smooth min-entropy, related to security param
+            - lambda: list of float, vec of dual vars of the SDP to compute asymptotic rate
+            - wp_Qbound: dict with the keys:
+                - max (min): float, maximum (minimum) winning probability of the nonlocal game over the quantum set
         - nthreads: int, num of threads to perform the computation parallelly
     """
     def __init__(self, rand_type,
@@ -167,8 +162,8 @@ class finiteRateCalculator():
                  wp_Qbound = {'max': None, 'min': None},
                  nthreads = 1):
         
-        assert rand_type in ('loc', 'glo', 'bli'), \
-            'Invalid rand_type. Plz set as one of the followings: "loc", "glo", or "bli".'
+        if rand_type not in ('loc', 'glo', 'bli'):
+            raise ValueError(f'Invalid rand_type {rand_type}. Expect "loc", "glo", or "bli".')
         self.rand_type = rand_type
 
         if rand_type == 'glo':
@@ -176,13 +171,13 @@ class finiteRateCalculator():
         else:
             self.d_K = 2
 
-        assert finrate_params['WP_check_direction'] in ('lb', 'ub'), \
-            'Invalid WP_check_direction in finrate_params. Plz set as one of the followings: "lb" or "ub".'
+        if finrate_params['WP_check_direction'] not in ('lb', 'ub'):
+            raise ValueError(f'Invalid WP_check_direction {finrate_params["WP_check_direction"]}. Expect "lb" or "ub".')
         self.finrate_params = dict()
         self.finrate_params.update(finrate_params)
 
-        assert ('max' in wp_Qbound) and ('min' in wp_Qbound), \
-            'Invalid wp_Qbound. wp_Qbound the following keys: "min", "max".'
+        if ('max' not in wp_Qbound) or ('min' not in wp_Qbound):
+            raise ValueError(f'Invalid wp_Qbound {wp_Qbound}. wp_Qbound must contain "min" and "max" keys.')
         self.wp_Qbound = dict()
         self.wp_Qbound.update(wp_Qbound)
 
@@ -204,17 +199,17 @@ class finiteRateCalculator():
     def _init_fin_rate_func(self):
         """Init finite rate function according to the protocol params
         """
-        assert self.finrate_params['asym_rate'], \
-            'Invalid asym_rate in finrate_params. Plz give asym_rate to compute finite rate.'
-        assert self.finrate_params['lambda'], \
-            'Invalid lambda in finrate_params. Plz give lambda to compute finite rate.'
-        assert self.finrate_params['eps'], \
-            'Invalid eps in finrate_params. Plz give eps to compute finite rate.'
-        assert self.wp_Qbound['max'], \
-            'Invalid max in wp_Qbound. Plz give max to compute finite rate.'
-        assert self.wp_Qbound['min'], \
-            'Invalid min in wp_Qbound. Plz give min to compute finite rate.'
-        
+        if not self.finrate_params['asym_rate']:
+            raise ValueError(f'No asym_rate. Plz give a valid asym_rate.')
+        if not self.finrate_params['lambda']:
+            raise ValueError(f'No lambda. Plz give a valid lambda.')
+        if not self.finrate_params['eps']:
+            raise ValueError(f'No eps. Plz give a valid eps.')
+        if not self.wp_Qbound['max']:
+            raise ValueError(f'No max wp_Qbound. Plz give a valid max wp_Qbound.')
+        if not self.wp_Qbound['min']:
+            raise ValueError(f'No min wp_Qbound. Plz give a valid min wp_Qbound.')
+
         self.fin_rate_func = partial(fin_rate,
                                      asym_rate = self.finrate_params['asym_rate'],
                                      d_K = self.d_K,
@@ -228,11 +223,11 @@ class finiteRateCalculator():
     def fin_rate(self, beta, nu_prime):
         """Compute finite rate according to the protocol params and given beta, nu_prime
         """
-        assert self.finrate_params['n'], \
-            'Invalid n in finrate_params. Plz give n to compute finite rate.'
-        assert self.finrate_params['gamma'], \
-            'Invalid gamma in finrate_params. Plz give gamma to compute finite rate.'
-        
+        if not self.finrate_params['n']:
+            raise ValueError(f'No n. Plz give a valid n.')
+        if not self.finrate_params['gamma']:
+            raise ValueError(f'No gamma. Plz give a valid gamma.')
+
         if not self.fin_rate_func:
             self._init_fin_rate_func()
         
@@ -326,10 +321,10 @@ class finiteRateCalculator():
     def _init_comp_func(self):
         """Init completeness function according to the given protocol params
         """
-        assert self.finrate_params['wtol'], \
-            'Invalid wtol in finrate_params. Plz give wtol to compute completeness.'
-        assert self.finrate_params['wexp'], \
-            'Invalid wtol in finrate_params. Plz give wexp to compute completeness.'
+        if not self.finrate_params['wtol']:
+            raise ValueError(f'No wtol. Plz give a valid wtol.')
+        if not self.finrate_params['wexp']:
+            raise ValueError(f'No wexp. Plz give a valid wexp.')
         
         if self.finrate_params['WP_check_direction'] == 'lb':
             self.comp_func = partial(completeness_wplb,
@@ -343,10 +338,10 @@ class finiteRateCalculator():
     def completeness(self):
         """Compute the completeness according to the protocol params 
         """
-        assert self.finrate_params['n'], \
-            'Invalid n in finrate_params. Plz give n to compute finite rate.'
-        assert self.finrate_params['gamma'], \
-            'Invalid gamma in finrate_params. Plz give gamma to compute finite rate.'
+        if not self.finrate_params['n']:
+            raise ValueError(f'No n. Plz give a valid n.')
+        if not self.finrate_params['gamma']:
+            raise ValueError(f'No gamma. Plz give a valid gamma.')
         
         if not self.comp_func:
             self._init_comp_func()
