@@ -113,6 +113,11 @@ OBJ_FUNC_MAP = {'bli': inner_quad_obj_bli,
                 'loc': inner_quad_obj_loc,
                 'glo': inner_quad_obj_glo}
 
+class OptimizationError(Exception):
+    def __init__(self, message="Not promised solved"):
+        self.message = message
+        super().__init__(self.message)
+
 class DIRandCalculator():
     """Class to compute asymptotic rates for DIRE protocols
         - scenario: list of tuples, Bell scenario specified in the following form:
@@ -160,8 +165,8 @@ class DIRandCalculator():
         self.scenario = [configA, configB]
         self.P = ncp.Probability(configA, configB)
         self.Aops, self.Bops =  self.P.parties
-        assert rand_type in ('loc', 'glo', 'bli'), \
-            'Invalid rand_type. Plz set as one of the followings: "loc", "glo", or "bli".'
+        if rand_type not in ('loc', 'glo', 'bli'):
+            raise ValueError(f"rand_type must be one of ('loc', 'glo', 'bli'), got {rand_type}")
         self.rand_type = rand_type
 
         self.inputs = target_inp
@@ -242,9 +247,8 @@ class DIRandCalculator():
         """
         coeff = np.array(coeff)
         if marginal:
-            assert marginal in self.P.labels, \
-                f'The specified marginal "{marginal}" is not in the party labels' + \
-                    'when calling _build_expression_from_probabilities'
+            if marginal not in self.P.labels:
+                raise ValueError(f'The specified marginal "{marginal}" is not in the party labels')
             
             monos = [coeff[x][a] * self.P([a],[x],[marginal])
                      for a in range(coeff.shape[1]) for x in range(coeff.shape[0])]
@@ -278,8 +282,8 @@ class DIRandCalculator():
             - direction: str ('<', '>'), inequality direction
 
         """
-        assert _type in ('eq', 'ineq'), \
-                    f'Invalid type for constraint. Plz set as "eq" or "ineq"!'
+        if _type not in ('eq', 'ineq'):
+            raise ValueError(f'Invalid type of constraint. Should be "eq" or "ineq" while got {_type}')
 
         if _type == 'eq':
             if not name:
@@ -287,8 +291,8 @@ class DIRandCalculator():
             constr = expr - val
             self.eq_constr.append(constr)
         else:
-            assert direction in ('<', '>'), \
-                'Invalid direction for constraint. Plz set as one of the followings: ">" or "<"'
+            if direction not in ('<', '>'):
+                raise ValueError(f'Invalid direction of constraint. Should be ">" or "<" while got {direction}')
 
             if not name:
                 name = f'ineq{len(self.ineq_constr)+1}'
@@ -354,10 +358,9 @@ class DIRandCalculator():
             print(f'Node of quadrature: {quad_t}')
             print(sdp.status, sdp.primal, sdp.dual)
 
-        assert sdp.status == 'optimal' or \
-            ('feasible' in sdp.status and 'infeasible' not in sdp.status), \
-            f'Status {sdp.status}, not promised solved'
-        
+        if sdp.status != 'optimal' and ('feasible' not in sdp.status or 'infeasible' in sdp.status):
+            raise OptimizationError(f'Status {sdp.status}, not promised solved')
+
         if sdp.status != 'optimal' and self.verbose >= 1:
             print('Solution does not reach optimal!')
 
@@ -394,10 +397,12 @@ class DIRandCalculator():
         """Compute the asymptotic rate in terms of von Neumann entropy lower bound
             by BFF21 method
         """
-        assert bool(self.inputs), 'No specified inputs! Plz set inputs first.'
-        assert bool(self.eq_constr) or bool(self.ineq_constr), \
-                'No constraints! Plz set at least a constraint first.'
+        if not bool(self.inputs):
+            raise ValueError('Inputs cannot be empty. Please provide valid inputs.')
         
+        if not bool(self.eq_constr) and not bool(self.ineq_constr):
+            raise ValueError('No constraints! Plz set at least a constraint first.')
+
         self._init_npa_relaxation()
         T, W = self._gen_Radau_quadrature()
 
@@ -477,10 +482,10 @@ class DIRandZPC_Calculator(DIRandCalculator):
                          solver_config = solver_config,
                          verbose = verbose)
         
-        assert protocol_params['WP_check_direction'] in ('lb', 'ub'), \
-            'Invalid WP_check_direction in protocol_params. \
-                Plz set as one of the followings: "lb" or "ub".'
-        
+        if protocol_params['WP_check_direction'] not in ('lb', 'ub'):
+            raise ValueError(f'Invalid WP_check_direction in protocol_params. \
+                             Should be "lb" or "ub" while got {protocol_params["WP_check_direction"]}')
+
         self.protocol_params = dict()
         self.protocol_params.update(protocol_params)
         if self.protocol_params['WP_predicate'] is None:
@@ -504,9 +509,9 @@ class DIRandZPC_Calculator(DIRandCalculator):
             - direction: str ('max', 'min'), decide to compute maximum or minimum
             - truncate_digit: int, the digit of the result up to truncate
         """
-        assert direction in ('max', 'min'), \
-            'Invalid direction for winning probability quantum bound. \
-                Plz set as the followings: "max" or "min".'
+        if direction not in ('max', 'min'):
+            raise ValueError(f'Invalid direction for winning probability quantum bound. \
+                               Should be "max" or "min" while got {direction}')
         
         sdp_Q = ncp.SdpRelaxation(self.P.get_all_operators(), verbose = max(self.verbose-3, 0))
         objective = super()._build_expression_from_probabilities(self.protocol_params['WP_predicate'])
@@ -619,7 +624,8 @@ class DIRandZPC_Calculator(DIRandCalculator):
         """Compute the asymptotic rates for the protocol with given params and derive the
             vec of dual vars `lambda_` and const term `c_lambda` of Lagrange dual function
         """
-        assert bool(self.inputs), 'No specified inputs! Plz set inputs first.'
+        if not bool(self.inputs):
+            raise ValueError('Inputs cannot be empty. Please provide valid inputs.')
         
         T, W = super()._gen_Radau_quadrature()
 
@@ -644,9 +650,14 @@ class DIRandZPC_Calculator(DIRandCalculator):
                 lambda_quad += [lamb]
                 p_zero_quad += [p_zero]
         else:
-            results = Parallel(n_jobs=self.nthread_quad, verbose=0)(
-                                delayed(self._inner_quad_with_dual_var)(self.sdp, T[i], W[i], obj_func) \
-                                for i in reversed(range(self.radau_quad_params['n_quad'])))
+            try:
+                results = Parallel(n_jobs=self.nthread_quad, verbose=0)(
+                                    delayed(self._inner_quad_with_dual_var)(self.sdp, T[i], W[i], obj_func) \
+                                    for i in reversed(range(self.radau_quad_params['n_quad'])))
+            except Exception as e:
+                print(f'Error occurs in asymptotic_rate_with_Lagrange_dual: {e}')
+                n_zp_checks = len(list(filter(lambda k: 'ZP' in k, self.constr_dict.keys())))
+                return 0, np.zeros(n_zp_checks+1), 0
             p_win_quad, entropy_quad, lambda_quad, p_zero_quad = zip(*results)
         
         entropy = np.sum(np.array(entropy_quad))
@@ -688,7 +699,7 @@ if __name__ == '__main__':
         radau_quad_params = {'n_quad': 12, 'endpoint': .999, 'keep_endpoint': True}
         npa_level = 2
         nthread_quad = 2
-        nthread_sdp = 6
+        nthread_sdp = 4
         solver_config = ['mosek', {'dparam.intpnt_co_tol_rel_gap': 5e-5,
                                 'iparam.num_threads': nthread_sdp,
                                 'iparam.infeas_report_level': 4}]
@@ -710,7 +721,11 @@ if __name__ == '__main__':
         
         Calculator.add_constraint_by_coeff('ineq', CHSH_BellCoeff, wexp,
                                            name = 'WP_check', direction = '>')
+        tic = time.time()
         asymp_rate = Calculator.asymptotic_rate()
+        toc = time.time()
+        print(f'Asymptotic rate: {asymp_rate}')
+        print(f'Elapsed time: {toc-tic}')
     else:
         print('Test DIRandZPC_Calculator >>>>>>')
         rand_type = 'loc'
@@ -726,7 +741,7 @@ if __name__ == '__main__':
                            'wexp': 0.8125, 'wtol': 1e-5, 'ztol': 1e-6}
         radau_quad_params = {'n_quad': 12, 'endpoint': .999, 'keep_endpoint': True}
         npa_level = 2
-        nthread_sdp = 6
+        nthread_sdp = 4
         nthread_quad = 2
         solver_config = ['mosek', {'dparam.intpnt_co_tol_rel_gap': 5e-5,
                                    'iparam.num_threads': nthread_sdp,
